@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK v2.0
 
 on:
   push:
@@ -24,15 +24,15 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 4. Упаковка index.html в Android-проект (Capacitor)
+      - name: 4. Сборка 100% Офлайн-пакета (вшиваем 3D-движок внутрь APK)
         run: |
           mkdir -p www
           cp index.html www/index.html
-          
+
           cat << 'EOF' > package.json
           {
-            "name": "print3d-studio",
-            "version": "1.0.0",
+            "name": "print3d-cad-pro",
+            "version": "2.0.0",
             "private": true
           }
           EOF
@@ -40,22 +40,56 @@ jobs:
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.print3d.studio",
-            "appName": "3D Print Studio",
+            "appName": "Print CAD Pro",
             "webDir": "www"
           }
           EOF
 
-          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+          npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6 three@0.160.0 three-mesh-bvh@0.7.3 three-bvh-csg@0.0.16
+
+          # Копируем библиотеки локально внутрь APK для работы без интернета
+          mkdir -p www/libs/addons
+          cp node_modules/three/build/three.module.js www/libs/three.module.js
+          cp -r node_modules/three/examples/jsm/* www/libs/addons/
+          cp node_modules/three-mesh-bvh/build/index.module.js www/libs/three-mesh-bvh.js
+          cp node_modules/three-bvh-csg/build/index.module.js www/libs/three-bvh-csg.js
+
           npx cap add android
 
-      - name: 5. Компиляция установочного APK файла
+      - name: 5. Генерация и установка инженерного логотипа на иконку APK
+        run: |
+          sudo apt-get update && sudo apt-get install -y librsvg2-bin
+          cat << 'EOF' > icon.svg
+          <svg width="512" height="512" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="64" height="64" rx="14" fill="#1E2229"/>
+            <rect x="2" y="2" width="60" height="60" rx="12" stroke="#3A414D" stroke-width="2"/>
+            <path d="M32 35L48 43V55L32 61L16 55V43L32 35Z" fill="#2F3640" stroke="#ECEFF1" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M32 35V47M32 47L48 43M32 47L16 43" stroke="#ECEFF1" stroke-width="2.2"/>
+            <path d="M21 6H43V17L36 27H28L21 17V6Z" fill="#FF6D00" stroke="#14171A" stroke-width="2" stroke-linejoin="round"/>
+            <rect x="24" y="10" width="16" height="4" fill="#14171A"/>
+            <line x1="32" y1="27" x2="32" y2="37" stroke="#00E676" stroke-width="3.5" stroke-linecap="round"/>
+          </svg>
+          EOF
+
+          # Заменяем стандартные иконки Android во всех папках разрешений
+          for dir in android/app/src/main/res/mipmap-*; do
+            if [ -f "$dir/ic_launcher.png" ]; then
+              rsvg-convert -w 192 -h 192 icon.svg -o "$dir/ic_launcher.png"
+              rsvg-convert -w 192 -h 192 icon.svg -o "$dir/ic_launcher_round.png"
+              rsvg-convert -w 192 -h 192 icon.svg -o "$dir/ic_launcher_foreground.png"
+            fi
+          done
+          # Удаляем адаптивный XML-фон, чтобы отображалась чистая векторная иконка
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+
+      - name: 6. Компиляция установочного APK файла
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: 6. Выгрузка готового APK файла для скачивания
+      - name: 7. Выгрузка готового APK файла
         uses: actions/upload-artifact@v4
         with:
-          name: 3D-Print-Studio-APK
+          name: Print-CAD-Pro-v2-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
