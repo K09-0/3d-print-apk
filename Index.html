@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>3D Print Studio Mobile</title>
+  <style>
+    :root {
+      --bg-dark: #121417;
+      --panel-bg: rgba(24, 27, 32, 0.92);
+      --accent: #00e676;
+      --accent-hover: #00c853;
+      --danger: #ff5252;
+      --warn: #ffab40;
+      --text: #eceff1;
+      --text-muted: #90a4ae;
+      --border: #2c313a;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden; background-color: var(--bg-dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+    }
+    #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+
+    /* Верхняя инфо-панель */
+    .top-bar {
+      position: absolute; top: 10px; left: 10px; right: 10px; z-index: 10;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      pointer-events: none;
+    }
+    .info-box {
+      background: var(--panel-bg); border: 1px solid var(--border);
+      padding: 8px 12px; border-radius: 10px; font-size: 12px;
+      line-height: 1.5; pointer-events: auto; backdrop-filter: blur(6px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .info-box b { color: var(--accent); }
+    .top-actions { display: flex; gap: 6px; pointer-events: auto; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* Кнопки */
+    button, .btn {
+      background: #262b33; color: var(--text); border: 1px solid var(--border);
+      padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+      gap: 5px; transition: 0.15s;
+    }
+    button:active, .btn:active { transform: scale(0.96); background: #323842; }
+    .btn-accent { background: var(--accent); color: #000; border-color: var(--accent); }
+    .btn-danger { background: rgba(255, 82, 82, 0.15); color: var(--danger); border-color: var(--danger); }
+    .btn-warn { background: rgba(255, 171, 64, 0.15); color: var(--warn); border-color: var(--warn); }
+    .btn-active { border-color: var(--accent); color: var(--accent); background: rgba(0, 230, 118, 0.12); }
+
+    /* Нижняя панель управления */
+    .bottom-dock {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+      background: var(--panel-bg); border-top: 1px solid var(--border);
+      backdrop-filter: blur(8px); display: flex; flex-direction: column;
+      max-height: 55vh; transition: transform 0.25s ease;
+    }
+    .dock-Minimized { transform: translateY(calc(100% - 46px)); }
+    .tabs {
+      display: flex; border-bottom: 1px solid var(--border); height: 46px; flex-shrink: 0;
+    }
+    .tab {
+      flex: 1; text-align: center; line-height: 46px; font-size: 13px; font-weight: 600;
+      color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(255,255,255,0.02); }
+    .tab-toggle { width: 46px; flex: none; font-size: 16px; border-left: 1px solid var(--border); }
+
+    .tab-content { padding: 12px; overflow-y: auto; display: none; }
+    .tab-content.active { display: block; }
+
+    /* Сетки и контролы внутри вкладок */
+    .grid-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .control-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; margin-bottom: 8px; background: rgba(0,0,0,0.25);
+      padding: 6px 10px; border-radius: 8px;
+    }
+    .control-row label { font-size: 12px; font-weight: 600; min-width: 65px; color: var(--text-muted); }
+    .control-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+    .control-row input[type="number"] {
+      width: 68px; background: #121417; border: 1px solid var(--border);
+      color: var(--text); padding: 6px; border-radius: 6px; font-size: 13px; text-align: center;
+    }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin: 8px 0 6px; }
+
+    /* Уведомления / Лоадер */
+    #toast {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.85); color: #fff; padding: 14px 20px; border-radius: 10px;
+      font-size: 14px; z-index: 100; display: none; text-align: center; border: 1px solid var(--accent);
+    }
+    input[type="file"] { display: none; }
+  </style>
+
+  <!-- Подключение библиотек Three.js и CSG (Булевы операции) через CDN -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+        "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.7.3/build/index.module.js",
+        "three-bvh-csg": "https://unpkg.com/three-bvh-csg@0.0.16/build/index.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+  <div id="toast">Обработка...</div>
+
+  <!-- Верхний интерфейс -->
+  <div class="top-bar">
+    <div class="info-box" id="model-stats">
+      Объектов: <b id="stat-count">0</b> | Выбран: <b id="stat-name">Нет</b><br>
+      Размер (мм): <b id="stat-size">0 × 0 × 0</b><br>
+      Объем: <b id="stat-vol">0</b> см³ | Полигонов: <b id="stat-poly">0</b>
+    </div>
+    <div class="top-actions">
+      <button onclick="document.getElementById('file-input').click()" class="btn-accent">📂 Открыть</button>
+      <input type="file" id="file-input" accept=".stl,.obj,.3mf,.gcode,.gco">
+      <button onclick="app.resetCamera()">🎥 Сброс вида</button>
+    </div>
+  </div>
+
+  <!-- Нижняя панель -->
+  <div class="bottom-dock" id="bottom-dock">
+    <div class="tabs">
+      <div class="tab active" onclick="app.switchTab(0)">➕ Фигуры</div>
+      <div class="tab" onclick="app.switchTab(1)">📐 Размеры / Оси</div>
+      <div class="tab" onclick="app.switchTab(2)">🛠 Операции</div>
+      <div class="tab" onclick="app.switchTab(3)">🚀 Экспорт</div>
+      <div class="tab tab-toggle" onclick="app.toggleDock()" id="dock-btn">▼</div>
+    </div>
+
+    <!-- Вкладка 0: Примитивы и Просмотр -->
+    <div class="tab-content active">
+      <div class="section-title">Добавить деталь на стол (20 мм)</div>
+      <div class="grid-btns">
+        <button onclick="app.addPrimitive('box')">🧊 Куб</button>
+        <button onclick="app.addPrimitive('cylinder')">🛢 Цилиндр</button>
+        <button onclick="app.addPrimitive('sphere')">🔮 Сфера</button>
+        <button onclick="app.addPrimitive('cone')">🔺 Конус</button>
+        <button onclick="app.addPrimitive('torus')">🍩 Кольцо</button>
+      </div>
+      <div class="section-title">Режим просмотра</div>
+      <div class="grid-btns">
+        <button id="btn-solid" class="btn-active" onclick="app.setRenderMode('solid')">Сплошной</button>
+        <button id="btn-wire" onclick="app.setRenderMode('wire')">Каркас (Сетка)</button>
+        <button id="btn-overhang" onclick="app.setRenderMode('overhang')">Нависания >45°</button>
+      </div>
+    </div>
+
+    <!-- Вкладка 1: Точная трансформация -->
+    <div class="tab-content">
+      <div class="section-title">Точные габариты детали (в мм)</div>
+      <div class="control-row">
+        <label>Ширина X:</label>
+        <input type="range" id="slide-sx" min="1" max="220" step="0.5" oninput="app.TransformFromUI('size', 'x', this.value)">
+        <input type="number" id="num-sx" step="0.5" onchange="app.TransformFromUI('size', 'x', this.value)">
+      </div>
+      <div class="control-row">
+        <label>Глубина Y:</label>
+        <input type="range" id="slide-sy" min="1" max="220" step="0.5" oninput="app.TransformFromUI('size', 'y', this.value)">
+        <input type="number" id="num-sy" step="0.5" onchange="app.TransformFromUI('size', 'y', this.value)">
+      </div>
+      <div class="control-row">
+        <label>Высота Z:</label>
+        <input type="range" id="slide-sz" min="1" max="250" step="0.5" oninput="app.TransformFromUI('size', 'z', this.value)">
+        <input type="number" id="num-sz" step="0.5" onchange="app.TransformFromUI('size', 'z', this.value)">
+      </div>
+
+      <div class="section-title">Позиция на столе (мм)</div>
+      <div class="control-row">
+        <label>Сдвиг X:</label>
+        <input type="range" id="slide-px" min="-110" max="110" step="1" oninput="app.TransformFromUI('pos', 'x', this.value)">
+        <input type="number" id="num-px" onchange="app.TransformFromUI('pos', 'x', this.value)">
+      </div>
+      <div class="control-row">
+        <label>Сдвиг Y:</label>
+        <input type="range" id="slide-py" min="-110" max="110" step="1" oninput="app.TransformFromUI('pos', 'y', this.value)">
+        <input type="number" id="num-py" onchange="app.TransformFromUI('pos', 'y', this.value)">
+      </div>
+      <div class="control-row">
+        <label>Высота Z:</label>
+        <input type="range" id="slide-pz" min="0" max="200" step="0.5" oninput="app.TransformFromUI('pos', 'z', this.value)">
+        <input type="number" id="num-pz" onchange="app.TransformFromUI('pos', 'z', this.value)">
+      </div>
+
+      <div class="section-title">Быстрый поворот на 45° / 90°</div>
+      <div class="grid-btns">
+        <button onclick="app.rotateSelected('x', 45)">↻ Ось X +45°</button>
+        <button onclick="app.rotateSelected('y', 45)">↻ Ось Y +45°</button>
+        <button onclick="app.rotateSelected('z', 45)">↻ Ось Z +45°</button>
+      </div>
+    </div>
+
+    <!-- Вкладка 2: Булевы операции и стол -->
+    <div class="tab-content">
+      <div class="section-title">Позиционирование для печати</div>
+      <div class="grid-btns">
+        <button onclick="app.layFlat()" class="btn-accent">⬇️ Положить на стол (Z=0)</button>
+        <button onclick="app.centerSelected()">🎯 В центр стола</button>
+      </div>
+
+      <div class="section-title">Конструктор и Отверстия (CSG)</div>
+      <div class="grid-btns">
+        <button id="btn-hole" onclick="app.toggleHoleMode()" class="btn-warn">🕳 Сделать «Фрезой» (Отверстием)</button>
+        <button onclick="app.applyBooleanAndMerge()" class="btn-accent">⚡ Вырезать отверстия / Объединить всё</button>
+      </div>
+
+      <div class="section-title">Управление объектами</div>
+      <div class="grid-btns">
+        <button onclick="app.duplicateSelected()">📋 Дублировать</button>
+        <button onclick="app.deleteSelected()" class="btn-danger">🗑 Удалить деталь</button>
+        <button onclick="app.clearAll()" class="btn-danger">💥 Очистить стол</button>
+      </div>
+    </div>
+
+    <!-- Вкладка 3: Экспорт и отправка в слайсер -->
+    <div class="tab-content">
+      <div class="section-title">Отправка готовой модели в слайсер (Cura, Creality, Bambu)</div>
+      <div class="grid-btns">
+        <button onclick="app.exportModel('stl', true)" class="btn-accent" style="padding:14px;">📲 Отправить .STL в слайсер (Поделиться)</button>
+      </div>
+      <div class="section-title">Сохранить в память телефона</div>
+      <div class="grid-btns">
+        <button onclick="app.exportModel('stl', false)">💾 Скачать .STL (Бинарный)</button>
+        <button onclick="app.exportModel('obj', false)">💾 Скачать .OBJ</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
+    import { GCodeLoader } from 'three/addons/loaders/GCodeLoader.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+    import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+    import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+    import { Brush, Evaluator, SUBTRACTION, ADDITION } from 'three-bvh-csg';
+
+    // В Three.js по умолчанию верх — это Y. Для 3D-печати делаем ось Z вертикальной!
+    THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
+
+    class PrintApp {
+      constructor() {
+        this.objects = [];
+        this.selected = null;
+        this.renderMode = 'solid';
+        this.gcodeObject = null;
+
+        this.initScene();
+        this.initBuildPlate();
+        this.initEvents();
+        this.animate();
+      }
+
+      initScene() {
+        const container = document.getElementById('canvas-container');
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x121417);
+
+        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+        this.camera.position.set(0, -240, 180);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(this.renderer.domElement);
+
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.08;
+        this.controls.target.set(0, 0, 20);
+
+        // Освещение
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambLight);
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight1.position.set(150, -150, 250);
+        this.scene.add(dirLight1);
+        const dirLight2 = new THREE.DirectionalLight(0x90caf9, 0.4);
+        dirLight2.position.set(-150, 150, 100);
+        this.scene.add(dirLight2);
+
+        // Выделение рамкой
+        this.boxHelper = new THREE.BoxHelper(new THREE.Mesh(), 0x00e676);
+        this.boxHelper.visible = false;
+        this.scene.add(this.boxHelper);
+      }
+
+      // Создание стола 3D-принтера 220x220 мм (Ender-3)
+      initBuildPlate() {
+        const size = 220;
+        const divisions = 22; // Сетка каждые 10 мм
+        const grid = new THREE.GridHelper(size, divisions, 0x00e676, 0x2c313a);
+        grid.rotation.x = Math.PI / 2; // Кладем сетку в плоскость XY (Z=0)
+        this.scene.add(grid);
+
+        // Полупрозрачная подложка стола
+        const planeGeo = new THREE.PlaneGeometry(size, size);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 0x181b20, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.position.z = -0.1;
+        this.scene.add(plane);
+
+        // Оси координат в углу стола (Красная X, Зеленая Y, Синяя Z)
+        const axes = new THREE.AxesHelper(40);
+        axes.position.set(-size/2, -size/2, 0.2);
+        this.scene.add(axes);
+      }
+
+      initEvents() {
+        window.addEventListener('resize', () => {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Выбор объекта нажатием пальца (Raycasting)
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let downTime = 0;
+
+        this.renderer.domElement.addEventListener('pointerdown', () => { downTime = Date.now(); });
+        this.renderer.domElement.addEventListener('pointerup', (e) => {
+          if (Date.now() - downTime > 250) return; // Если вращали камеру — не клик
+          const rect = this.renderer.domElement.getBoundingClientRect();
+          pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(pointer, this.camera);
+          const intersects = raycaster.intersectObjects(this.objects, false);
+          if (intersects.length > 0) {
+            this.selectObject(intersects[0].object);
+          } else {
+            this.selectObject(null);
+          }
+        });
+
+        // Загрузка файла
+        document.getElementById('file-input').addEventListener('change', (e) => {
+          if (e.target.files.length > 0) this.loadFile(e.target.files[0]);
+        });
+      }
+
+      showToast(msg, duration = 0) {
+        const t = document.getElementById('toast');
+        t.innerText = msg;
+        t.style.display = 'block';
+        if (duration > 0) setTimeout(() => { t.style.display = 'none'; }, duration);
+      }
+      hideToast() { document.getElementById('toast').style.display = 'none'; }
+
+      // Создание материала в зависимости от режима (обычный, фреза или анализ углов >45°)
+      createMaterial(isHole = false) {
+        if (isHole) {
+          return new THREE.MeshStandardMaterial({
+            color: 0xff5252, transparent: true, opacity: 0.45,
+            roughness: 0.4, wireframe: this.renderMode === 'wire'
+          });
+        }
+        if (this.renderMode === 'overhang') {
+          // Шейдер подсветки нависаний > 45 градусов (где нормаль смотрит вниз по оси Z)
+          return new THREE.ShaderMaterial({
+            vertexShader: `
+              varying vec3 vNormal;
+              void main() {
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              varying vec3 vNormal;
+              void main() {
+                // В мировых координатах проверяем наклон вниз
+                vec3 light = normalize(vec3(0.5, -0.5, 1.0));
+                float d = max(dot(vNormal, light), 0.25);
+                if (vNormal.z < -0.707) { // cos(135°) = -0.707 (угол > 45° к столу)
+                  gl_FragColor = vec4(1.0, 0.2, 0.2, 1.0);
+                } else {
+                  gl_FragColor = vec4(vec3(0.1, 0.75, 0.95) * d, 1.0);
+                }
+              }
+            `,
+            side: THREE.DoubleSide
+          });
+        }
+        return new THREE.MeshStandardMaterial({
+          color: 0x29b6f6, roughness: 0.35, metalness: 0.1,
+          wireframe: this.renderMode === 'wire', side: THREE.DoubleSide
+        });
+      }
+
+      // Добавление геометрии на стол
+      addMeshFromGeometry(geometry, name = 'Деталь') {
+        if (this.gcodeObject) {
+          this.scene.remove(this.gcodeObject);
+          this.gcodeObject = null;
+        }
+        geometry.computeVertexNormals();
+        geometry.computeBoundingBox();
+
+        // Центрируем геометрию внутри самого меша
+        const center = new THREE.Vector3();
+        geometry.boundingBox.getCenter(center);
+        geometry.translate(-center.x, -center.y, -center.z);
+        geometry.computeBoundingBox();
+
+        const size = new THREE.Vector3();
+        geometry.boundingBox.getSize(size);
+
+        const mesh = new THREE.Mesh(geometry, this.createMaterial(false));
+        mesh.name = name;
+        mesh.userData.isHole = false;
+        // Ставим ровно на стол (Z = половина высоты)
+        mesh.position.set(0, 0, size.z / 2);
+
+        this.scene.add(mesh);
+        this.objects.push(mesh);
+        this.selectObject(mesh);
+        this.updateStats();
+      }
+
+      // Генерация базовых примитивов
+      addPrimitive(type) {
+        let geo;
+        let name = 'Фигура';
+        switch (type) {
+          case 'box': geo = new THREE.BoxGeometry(20, 20, 20); name = 'Куб'; break;
+          case 'cylinder':
+            geo = new THREE.CylinderGeometry(10, 10, 20, 48);
+            geo.rotateX(Math.PI / 2); // Поворачиваем вдоль оси Z
+            name = 'Цилиндр';
+            break;
+          case 'sphere': geo = new THREE.SphereGeometry(12, 36, 36); name = 'Сфера'; break;
+          case 'cone':
+            geo = new THREE.ConeGeometry(12, 24, 48);
+            geo.rotateX(Math.PI / 2);
+            name = 'Конус';
+            break;
+          case 'torus': geo = new THREE.TorusGeometry(12, 4, 24, 64); name = 'Кольцо'; break;
+        }
+        this.addMeshFromGeometry(geo, name);
+      }
+
+      // Загрузка файлов (STL, OBJ, 3MF, GCODE)
+      loadFile(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        this.showToast(`Загрузка ${file.name}...`);
+        const reader = new FileReader();
+
+        reader.onload = (ev) => {
+          try {
+            const contents = ev.target.result;
+            if (ext === 'stl') {
+              const geo = new STLLoader().parse(contents);
+              this.addMeshFromGeometry(geo, file.name);
+            } else if (ext === 'obj') {
+              const text = new TextDecoder().decode(contents);
+              const obj = new OBJLoader().parse(text);
+              const geos = [];
+              obj.traverse(c => { if (c.isMesh) geos.push(c.geometry.clone()); });
+              if (geos.length > 0) {
+                const merged = BufferGeometryUtils.mergeGeometries(geos);
+                this.addMeshFromGeometry(merged, file.name);
+              }
+            } else if (ext === '3mf') {
+              const group = new ThreeMFLoader().parse(contents);
+              const geos = [];
+              group.traverse(c => { if (c.isMesh) geos.push(c.geometry.clone()); });
+              if (geos.length > 0) {
+                const merged = BufferGeometryUtils.mergeGeometries(geos);
+                this.addMeshFromGeometry(merged, file.name);
+              }
+            } else if (ext === 'gcode' || ext === 'gco') {
+              const text = new TextDecoder().decode(contents);
+              if (this.gcodeObject) this.scene.remove(this.gcodeObject);
+              const gcode = new GCodeLoader().parse(text);
+              gcode.rotation.x = Math.PI / 2; // Выравниваем под стол Z-up
+              gcode.position.set(-110, -110, 0);
+              this.gcodeObject = gcode;
+              this.scene.add(gcode);
+              this.showToast('G-Code траектория загружена!', 2000);
+              return;
+            }
+            this.hideToast();
+          } catch (err) {
+            alert('Ошибка чтения файла: ' + err.message);
+            this.hideToast();
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      selectObject(mesh) {
+        this.selected = mesh;
+        if (mesh) {
+          this.boxHelper.setFromObject(mesh);
+          this.boxHelper.visible = true;
+          const btnHole = document.getElementById('btn-hole');
+          if (mesh.userData.isHole) {
+            btnHole.classList.add('btn-active');
+            btnHole.innerText = '🕳 Режим: Фреза (Отверстие)';
+          } else {
+            btnHole.classList.remove('btn-active');
+            btnHole.innerText = '🕳 Сделать «Фрезой» (Отверстием)';
+          }
+        } else {
+          this.boxHelper.visible = false;
+        }
+        this.syncUIWithSelected();
+        this.updateStats();
+      }
+
+      // Получение текущих реальных размеров меша в мм
+      getMeshDimensions(mesh) {
+        const box = new THREE.Box3().setFromObject(mesh);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        return { box, size };
+      }
+
+      syncUIWithSelected() {
+        if (!this.selected) return;
+        const { size } = this.getMeshDimensions(this.selected);
+        const pos = this.selected.position;
+
+        const setVal = (id, val) => { document.getElementById(id).value = Number(val).toFixed(1); };
+        setVal('slide-sx', size.x); setVal('num-sx', size.x);
+        setVal('slide-sy', size.y); setVal('num-sy', size.y);
+        setVal('slide-sz', size.z); setVal('num-sz', size.z);
+
+        setVal('slide-px', pos.x); setVal('num-px', pos.x);
+        setVal('slide-py', pos.y); setVal('num-py', pos.y);
+        setVal('slide-pz', pos.z); setVal('num-pz', pos.z);
+      }
+
+      // Изменение размеров в мм или координат из ползунков/полей
+      TransformFromUI(mode, axis, val) {
+        if (!this.selected) return;
+        const num = parseFloat(val);
+        if (isNaN(num)) return;
+
+        if (mode === 'pos') {
+          this.selected.position[axis] = num;
+        } else if (mode === 'size') {
+          if (num <= 0.1) return;
+          const { size } = this.getMeshDimensions(this.selected);
+          const currentLen = size[axis];
+          if (currentLen > 0) {
+            const ratio = num / currentLen;
+            this.selected.scale[axis] *= ratio;
+          }
+        }
+        this.boxHelper.update();
+        this.syncUIWithSelected();
+        this.updateStats();
+      }
+
+      rotateSelected(axis, deg) {
+        if (!this.selected) return;
+        const rad = THREE.MathUtils.degToRad(deg);
+        this.selected.rotation[axis] += rad;
+        this.layFlat(); // После поворота сразу приземляем на стол
+      }
+
+      layFlat() {
+        if (!this.selected) return;
+        const { box } = this.getMeshDimensions(this.selected);
+        this.selected.position.z -= box.min.z; // Нижняя точка ровно в Z = 0
+        this.boxHelper.update();
+        this.syncUIWithSelected();
+        this.updateStats();
+      }
+
+      centerSelected() {
+        if (!this.selected) return;
+        this.selected.position.x = 0;
+        this.selected.position.y = 0;
+        this.layFlat();
+      }
+
+      toggleHoleMode() {
+        if (!this.selected) return;
+        this.selected.userData.isHole = !this.selected.userData.isHole;
+        this.selected.material = this.createMaterial(this.selected.userData.isHole);
+        this.selectObject(this.selected);
+      }
+
+      // БУЛЕВЫ ОПЕРАЦИИ: Вырезание отверстий и объединение всех деталей в одну
+      applyBooleanAndMerge() {
+        if (this.objects.length < 2) {
+          this.showToast('Нужно минимум 2 объекта на столе!', 2000);
+          return;
+        }
+        const solids = this.objects.filter(o => !o.userData.isHole);
+        const holes = this.objects.filter(o => o.userData.isHole);
+
+        if (solids.length === 0) {
+          this.showToast('Нет основной детали (все объекты — отверстия)!', 2500);
+          return;
+        }
+
+        this.showToast('Вычисление 3D-геометрии...');
+        setTimeout(() => {
+          try {
+            const evaluator = new Evaluator();
+            const prepBrush = (mesh) => {
+              mesh.updateMatrixWorld();
+              const g = mesh.geometry.clone();
+              g.applyMatrix4(mesh.matrixWorld);
+              const b = new Brush(g);
+              b.updateMatrixWorld();
+              return b;
+            };
+
+            let resultBrush = prepBrush(solids[0]);
+            for (let i = 1; i < solids.length; i++) {
+              resultBrush = evaluator.evaluate(resultBrush, prepBrush(solids[i]), ADDITION);
+            }
+            for (let i = 0; i < holes.length; i++) {
+              resultBrush = evaluator.evaluate(resultBrush, prepBrush(holes[i]), SUBTRACTION);
+            }
+
+            const finalGeo = resultBrush.geometry.clone();
+            this.clearAll(false);
+            this.addMeshFromGeometry(finalGeo, 'Готовая_деталь');
+            this.layFlat();
+            this.showToast('Деталь успешно собрана!', 1800);
+          } catch (e) {
+            alert('Ошибка булевой операции: ' + e.message);
+            this.hideToast();
+          }
+        }, 50);
+      }
+
+      duplicateSelected() {
+        if (!this.selected) return;
+        const clone = this.selected.clone();
+        clone.geometry = this.selected.geometry.clone();
+        clone.material = this.createMaterial(this.selected.userData.isHole);
+        clone.position.x += 15;
+        clone.position.y += 15;
+        this.scene.add(clone);
+        this.objects.push(clone);
+        this.selectObject(clone);
+      }
+
+      deleteSelected() {
+        if (!this.selected) return;
+        this.scene.remove(this.selected);
+        this.objects = this.objects.filter(o => o !== this.selected);
+        this.selectObject(this.objects[this.objects.length - 1] || null);
+      }
+
+      clearAll(confirmAsk = true) {
+        if (confirmAsk && this.objects.length > 0 && !confirm('Очистить весь стол?')) return;
+        this.objects.forEach(o => this.scene.remove(o));
+        this.objects = [];
+        if (this.gcodeObject) { this.scene.remove(this.gcodeObject); this.gcodeObject = null; }
+        this.selectObject(null);
+      }
+
+      setRenderMode(mode) {
+        this.renderMode = mode;
+        ['solid', 'wire', 'overhang'].forEach(m => {
+          document.getElementById('btn-' + m).classList.toggle('btn-active', m === mode);
+        });
+        this.objects.forEach(o => { o.material = this.createMaterial(o.userData.isHole); });
+      }
+
+      // Расчет реального объема детали в см³ и числа треугольников
+      calculateVolumeCm3(mesh) {
+        const geo = mesh.geometry;
+        const pos = geo.attributes.position;
+        if (!pos) return 0;
+        let vol = 0;
+        const p1 = new THREE.Vector3(), p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
+        const index = geo.index;
+        const count = index ? index.count : pos.count;
+
+        for (let i = 0; i < count; i += 3) {
+          const a = index ? index.getX(i) : i;
+          const b = index ? index.getX(i+1) : i+1;
+          const c = index ? index.getX(i+2) : i+2;
+          p1.fromBufferAttribute(pos, a).multiply(mesh.scale);
+          p2.fromBufferAttribute(pos, b).multiply(mesh.scale);
+          p3.fromBufferAttribute(pos, c).multiply(mesh.scale);
+          vol += p1.dot(p2.cross(p3)) / 6.0;
+        }
+        return Math.abs(vol) / 1000; // Перевод из мм³ в см³
+      }
+
+      updateStats() {
+        document.getElementById('stat-count').innerText = this.objects.length;
+        if (!this.selected) {
+          document.getElementById('stat-name').innerText = 'Нет';
+          document.getElementById('stat-size').innerText = '0 × 0 × 0';
+          document.getElementById('stat-vol').innerText = '0';
+          document.getElementById('stat-poly').innerText = '0';
+          return;
+        }
+        const { size } = this.getMeshDimensions(this.selected);
+        const geo = this.selected.geometry;
+        const polys = geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3;
+        const vol = this.calculateVolumeCm3(this.selected);
+
+        document.getElementById('stat-name').innerText = this.selected.name;
+        document.getElementById('stat-size').innerText = `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}`;
+        document.getElementById('stat-vol').innerText = vol.toFixed(2);
+        document.getElementById('stat-poly').innerText = Math.round(polys);
+      }
+
+      // Экспорт в STL/OBJ и отправка в слайсер через системное меню Android
+      async exportModel(format, shareToSlicer) {
+        const solids = this.objects.filter(o => !o.userData.isHole);
+        if (solids.length === 0) {
+          alert('На столе нет деталей для экспорта!');
+          return;
+        }
+
+        // Создаем временную группу только из твердых деталей с примененными трансформациями
+        const exportGroup = new THREE.Group();
+        solids.forEach(m => {
+          m.updateMatrixWorld();
+          const clone = m.clone();
+          clone.geometry = m.geometry.clone().applyMatrix4(m.matrixWorld);
+          clone.position.set(0,0,0); clone.rotation.set(0,0,0); clone.scale.set(1,1,1);
+          exportGroup.add(clone);
+        });
+
+        let blob, filename;
+        if (format === 'stl') {
+          const exporter = new STLExporter();
+          const result = exporter.parse(exportGroup, { binary: true });
+          blob = new Blob([result], { type: 'model/stl' });
+          filename = 'model_3dprint.stl';
+        } else {
+          const exporter = new OBJExporter();
+          const result = exporter.parse(exportGroup);
+          blob = new Blob([result], { type: 'text/plain' });
+          filename = 'model_3dprint.obj';
+        }
+
+        const file = new File([blob], filename, { type: blob.type });
+
+        // Если нажата кнопка «Отправить в слайсер» и телефон поддерживает системное меню
+        if (shareToSlicer && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: 'Отправить 3D-модель в слайсер',
+              text: 'Готовая модель для 3D-печати',
+              files: [file]
+            });
+            return;
+          } catch (e) { console.log('Отмена шаринга, скачиваем файл напрямую.'); }
+        }
+
+        // Обычное скачивание в память телефона
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        this.showToast(`Файл ${filename} сохранен в Загрузки!`, 2500);
+      }
+
+      resetCamera() {
+        this.camera.position.set(0, -240, 180);
+        this.controls.target.set(0, 0, 20);
+        this.controls.update();
+      }
+
+      switchTab(idx) {
+        document.querySelectorAll('.tab').forEach((t, i) => {
+          if (i < 4) t.classList.toggle('active', i === idx);
+        });
+        document.querySelectorAll('.tab-content').forEach((c, i) => {
+          c.classList.toggle('active', i === idx);
+        });
+        document.getElementById('bottom-dock').classList.remove('dock-Minimized');
+        document.getElementById('dock-btn').innerText = '▼';
+      }
+
+      toggleDock() {
+        const dock = document.getElementById('bottom-dock');
+        const isMin = dock.classList.toggle('dock-Minimized');
+        document.getElementById('dock-btn').innerText = isMin ? '▲' : '▼';
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    window.app = new PrintApp();
+  </script>
+</body>
+</html>
