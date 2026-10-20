@@ -7,44 +7,64 @@ on:
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: 1. Скачивание вашего кода
+      - name: 1. Скачивание кода репозитория
         uses: actions/checkout@v4
 
-      - name: 2. Установка Node.js
+      - name: 2. Установка Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: 3. Установка Java 17 (для сборщика Android)
-        uses: actions/setup-java@v4
+      - name: 3. Установка Java 21 (требуется для новых версий Android SDK и Capacitor)
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
-      - name: 4. Установка Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: 5. Упаковка index.html в Android-проект (Capacitor)
+      - name: 4. Подготовка веб-папки и конфигурации Capacitor
         run: |
           mkdir -p www
-          cp index.html www/index.html
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "3D Print Studio" "com.print3d.studio" --web-dir www
-          npx cap add android
+          if [ -f "index.html" ]; then
+            cp index.html www/index.html
+          else
+            echo "ОШИБКА: Файл index.html не найден в корне репозитория!"
+            exit 1
+          fi
 
-      - name: 6. Компиляция установочного APK файла
+          cat << 'EOF' > package.json
+          {
+            "name": "print3d-studio",
+            "version": "1.0.0",
+            "description": "3D Print Studio Mobile",
+            "private": true
+          }
+          EOF
+
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.print3d.studio",
+            "appName": "3D Print Studio",
+            "webDir": "www"
+          }
+          EOF
+
+      - name: 5. Установка Capacitor и генерация Android-проекта
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap add android
+          npx cap sync android
+
+      - name: 6. Сборка установочного APK файла (Gradle)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
-      - name: 7. Выгрузка готового APK файла для скачивания
+      - name: 7. Выгрузка готового APK файла
         uses: actions/upload-artifact@v4
         with:
           name: 3D-Print-Studio-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
