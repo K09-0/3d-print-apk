@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>3D Print CAD v2.0</title>
+  <title>Print CAD Pro v3.0</title>
   <style>
     :root {
-      --bg-dark: #14171a;
-      --panel-bg: rgba(26, 30, 36, 0.95);
-      --accent: #ff6d00; /* Строгий инженерный оранжевый (вместо неона) */
+      --bg-dark: #121518;
+      --panel-bg: rgba(24, 28, 34, 0.96);
+      --accent: #ff6d00;
       --accent-green: #00e676;
       --danger: #ff5252;
       --warn: #ffab40;
+      --info: #29b6f6;
       --text: #eceff1;
       --text-muted: #90a4ae;
       --border: #2f3640;
@@ -25,102 +26,121 @@
     }
     #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* Верхняя панель с логотипом */
-    .top-bar {
-      position: absolute; top: 8px; left: 8px; right: 8px; z-index: 10;
-      display: flex; justify-content: space-between; align-items: flex-start;
-      pointer-events: none; gap: 6px;
+    /* НОВАЯ КОМПАКТНАЯ ГОРИЗОНТАЛЬНАЯ ШАПКА ВЕРСИИ 3.0 */
+    .top-header {
+      position: absolute; top: 6px; left: 6px; right: 6px; z-index: 10;
+      display: flex; flex-direction: column; gap: 4px; pointer-events: none;
     }
-    .brand-and-stats { display: flex; flex-direction: column; gap: 6px; pointer-events: auto; }
-    .brand-header {
-      display: flex; align-items: center; gap: 8px;
+    .top-row-main {
+      display: flex; align-items: center; justify-content: space-between;
       background: var(--panel-bg); border: 1px solid var(--border);
-      padding: 5px 10px; border-radius: 8px; width: fit-content;
+      padding: 4px 8px; border-radius: 8px; pointer-events: auto;
+      backdrop-filter: blur(8px); box-shadow: 0 3px 10px rgba(0,0,0,0.4);
     }
-    .brand-header svg { width: 26px; height: 26px; flex-shrink: 0; }
-    .brand-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; color: var(--text); }
-    .brand-sub { font-size: 10px; color: var(--accent); font-weight: 600; display: block; }
+    .brand-mini { display: flex; align-items: center; gap: 6px; }
+    .brand-mini svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .brand-mini-title { font-size: 12px; font-weight: 800; letter-spacing: 0.3px; line-height: 1.1; }
+    .brand-mini-title span { color: var(--accent); display: block; font-size: 9px; font-weight: 700; }
 
-    .info-box {
-      background: var(--panel-bg); border: 1px solid var(--border);
-      padding: 7px 10px; border-radius: 8px; font-size: 11.5px;
-      line-height: 1.45; backdrop-filter: blur(6px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-    .info-box b { color: var(--accent); }
-    .caliper-badge {
-      display: none; background: rgba(255, 109, 0, 0.15); border: 1px solid var(--accent);
-      color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12px; margin-top: 4px;
-    }
+    .top-btns { display: flex; gap: 5px; align-items: center; }
+    .top-btns button { padding: 6px 9px; font-size: 11.5px; border-radius: 6px; }
 
-    .top-actions { display: flex; gap: 6px; pointer-events: auto; flex-wrap: wrap; justify-content: flex-end; max-width: 190px; }
+    /* Компактная горизонтальная строка статистики в 1 линию */
+    .stats-strip {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+      background: rgba(20, 23, 26, 0.88); border: 1px solid var(--border);
+      padding: 4px 10px; border-radius: 6px; font-size: 11px; color: var(--text-muted);
+      pointer-events: auto; gap: 8px;
+    }
+    .stats-strip b { color: var(--accent); font-weight: 700; }
+
+    .caliper-strip {
+      display: none; background: rgba(255, 109, 0, 0.18); border: 1px solid var(--accent);
+      color: #fff; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; pointer-events: auto;
+    }
 
     /* Кнопки */
     button, .btn {
       background: #232830; color: var(--text); border: 1px solid var(--border);
-      padding: 9px 11px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+      padding: 8px 10px; border-radius: 7px; font-size: 12px; font-weight: 600;
       cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
-      gap: 5px; transition: 0.12s;
+      gap: 4px; transition: 0.12s;
     }
     button:active { transform: scale(0.96); background: #2f3640; }
     .btn-accent { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 700; }
     .btn-green { background: var(--accent-green); color: #111; border-color: var(--accent-green); font-weight: 700; }
+    .btn-info { background: rgba(41, 182, 246, 0.15); color: var(--info); border-color: var(--info); }
     .btn-danger { background: rgba(255, 82, 82, 0.15); color: var(--danger); border-color: var(--danger); }
     .btn-warn { background: rgba(255, 171, 64, 0.15); color: var(--warn); border-color: var(--warn); }
-    .btn-active { border-color: var(--accent); color: var(--accent); background: rgba(255, 109, 0, 0.15); }
+    .btn-active { border-color: var(--accent); color: var(--accent); background: rgba(255, 109, 0, 0.18); }
 
-    /* Нижняя панель управления */
+    /* Нижняя панель с ЗАКРЕПЛЕННОЙ кнопкой сворачивания */
     .bottom-dock {
       position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
       background: var(--panel-bg); border-top: 1px solid var(--border);
       backdrop-filter: blur(8px); display: flex; flex-direction: column;
-      max-height: 56vh; transition: transform 0.25s ease;
+      max-height: 54vh; transition: transform 0.25s ease;
     }
-    .dock-Minimized { transform: translateY(calc(100% - 44px)); }
-    .tabs { display: flex; border-bottom: 1px solid var(--border); height: 44px; flex-shrink: 0; overflow-x: auto; }
+    .dock-Minimized { transform: translateY(calc(100% - 42px)); }
+
+    .dock-header {
+      display: flex; align-items: stretch; height: 42px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .tabs-scroll {
+      display: flex; flex: 1; overflow-x: auto; scrollbar-width: none;
+    }
+    .tabs-scroll::-webkit-scrollbar { display: none; }
     .tab {
-      flex: 1; text-align: center; line-height: 44px; font-size: 12px; font-weight: 600;
-      color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; padding: 0 6px;
+      flex: 1; text-align: center; line-height: 42px; font-size: 11.5px; font-weight: 600;
+      color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+      white-space: nowrap; padding: 0 10px;
     }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(255,255,255,0.02); }
-    .tab-toggle { width: 42px; flex: none; font-size: 15px; border-left: 1px solid var(--border); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(255,255,255,0.03); }
+
+    /* Статичная кнопка сворачивания справа */
+    .dock-toggle-static {
+      width: 46px; flex-shrink: 0; background: #1e232a; color: var(--accent);
+      border: none; border-left: 1px solid var(--border); border-radius: 0;
+      font-size: 16px; font-weight: bold; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
 
     .tab-content { padding: 10px 12px; overflow-y: auto; display: none; }
     .tab-content.active { display: block; }
 
-    .grid-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)); gap: 7px; margin-bottom: 8px; }
+    .grid-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; margin-bottom: 8px; }
     .control-row {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; margin-bottom: 7px; background: rgba(0,0,0,0.28);
-      padding: 6px 10px; border-radius: 7px;
+      gap: 8px; margin-bottom: 6px; background: rgba(0,0,0,0.28);
+      padding: 5px 10px; border-radius: 7px;
     }
-    .control-row label { font-size: 12px; font-weight: 600; min-width: 70px; color: var(--text-muted); }
+    .control-row label { font-size: 11.5px; font-weight: 600; min-width: 68px; color: var(--text-muted); }
     .control-row input[type="range"] { flex: 1; accent-color: var(--accent); }
-    .control-row input[type="number"], .control-row select {
-      width: 72px; background: #14171a; border: 1px solid var(--border);
-      color: var(--text); padding: 5px; border-radius: 5px; font-size: 12.5px; text-align: center;
+    .control-row input[type="number"], .control-row input[type="text"], .control-row select {
+      width: 72px; background: #121518; border: 1px solid var(--border);
+      color: var(--text); padding: 5px; border-radius: 5px; font-size: 12px; text-align: center;
     }
-    .control-row select { width: auto; flex: 1; text-align: left; padding: 6px; }
-    .section-title { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); margin: 8px 0 5px; font-weight: 700; }
+    .control-row input[type="text"] { flex: 1; width: auto; text-align: left; padding: 6px 8px; }
+    .control-row select { width: auto; flex: 1; text-align: left; padding: 5px; }
+    .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); margin: 7px 0 5px; font-weight: 700; }
 
     .calc-card {
       background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 8px;
-      padding: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+      padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;
     }
-    .calc-item { text-align: center; padding: 6px; background: #1a1e24; border-radius: 6px; }
-    .calc-item span { display: block; font-size: 11px; color: var(--text-muted); }
-    .calc-item b { font-size: 15px; color: var(--accent-green); }
+    .calc-item { text-align: center; padding: 5px; background: #1a1e24; border-radius: 6px; }
+    .calc-item span { display: block; font-size: 10.5px; color: var(--text-muted); }
+    .calc-item b { font-size: 14px; color: var(--accent-green); }
 
     #toast {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(20, 23, 26, 0.95); color: #fff; padding: 14px 20px; border-radius: 10px;
-      font-size: 13.5px; z-index: 100; display: none; text-align: center; border: 1px solid var(--accent);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      background: rgba(18, 21, 24, 0.96); color: #fff; padding: 14px 18px; border-radius: 10px;
+      font-size: 13px; z-index: 100; display: none; text-align: center; border: 1px solid var(--accent);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.7); max-width: 88vw; line-height: 1.4;
     }
     input[type="file"] { display: none; }
   </style>
 
-  <!-- Подключение ЛОКАЛЬНЫХ библиотек для 100% офлайн-работы (с фолбэком на CDN для браузера) -->
   <script type="importmap">
     {
       "imports": {
@@ -137,73 +157,85 @@
   <div id="canvas-container"></div>
   <div id="toast">Обработка...</div>
 
-  <!-- Верхний интерфейс с инженерным логотипом -->
-  <div class="top-bar">
-    <div class="brand-and-stats">
-      <div class="brand-header">
-        <!-- Строгий инженерный векторный логотип: Сопло экструдера + 3D Куб -->
+  <!-- КОМПАКТНАЯ ГОРИЗОНТАЛЬНАЯ ВЕРХНЯЯ ПАНЕЛЬ -->
+  <div class="top-header">
+    <div class="top-row-main">
+      <div class="brand-mini">
         <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect width="64" height="64" rx="12" fill="#232830" stroke="#3A414D" stroke-width="2"/>
-          <!-- Изометрическая деталь внизу -->
-          <path d="M32 36L48 44V56L32 62L16 56V44L32 36Z" fill="#2F3640" stroke="#90A4AE" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M32 36V48M32 48L48 44M32 48L16 44" stroke="#90A4AE" stroke-width="2"/>
-          <!-- Латунное сопло 3D-принтера сверху -->
-          <path d="M22 8H42V18L36 28H28L22 18V8Z" fill="#FF6D00" stroke="#14171A" stroke-width="2" stroke-linejoin="round"/>
-          <rect x="25" y="12" width="14" height="4" fill="#14171A"/>
-          <!-- Нить пластика -->
+          <path d="M32 36L48 44V56L32 62L16 56V44L32 36Z" fill="#2F3640" stroke="#90A4AE" stroke-width="2"/>
+          <path d="M22 8H42V18L36 28H28L22 18V8Z" fill="#FF6D00" stroke="#14171A" stroke-width="2"/>
           <line x1="32" y1="28" x2="32" y2="38" stroke="#00E676" stroke-width="3" stroke-linecap="round"/>
         </svg>
-        <div>
-          <div class="brand-title">PRINT CAD <span style="color:var(--accent)">PRO</span></div>
-          <span class="brand-sub">OFFLINE 3D STUDIO v2.0</span>
-        </div>
+        <div class="brand-mini-title">PRINT CAD<span>PRO v3.0</span></div>
       </div>
 
-      <div class="info-box" id="model-stats">
-        Деталей: <b id="stat-count">0</b> | Выбрано: <b id="stat-name">Нет</b><br>
-        Габариты: <b id="stat-size">0 × 0 × 0</b> мм<br>
-        Объем: <b id="stat-vol">0</b> см³ | Треугольников: <b id="stat-poly">0</b>
-        <div class="caliper-badge" id="caliper-info">
-          📏 <b>Штангенциркуль:</b> ткните в 2 точки на модели
-        </div>
+      <div class="top-btns">
+        <button onclick="document.getElementById('file-input').click()" class="btn-accent">📂 Открыть</button>
+        <input type="file" id="file-input" accept=".stl,.obj,.3mf,.gcode,.gco">
+        <button id="btn-caliper" onclick="app.toggleCaliper()">📏 Замер</button>
+        <button onclick="app.resetCamera()">🎥 Вид</button>
+        <button onclick="app.switchTab(5)" class="btn-green">🚀 Экспорт</button>
       </div>
     </div>
 
-    <div class="top-actions">
-      <button onclick="document.getElementById('file-input').click()" class="btn-accent">📂 Открыть</button>
-      <input type="file" id="file-input" accept=".stl,.obj,.3mf,.gcode,.gco">
-      <button id="btn-caliper" onclick="app.toggleCaliper()">📏 Замер</button>
-      <button onclick="app.resetCamera()">🎥 Вид</button>
+    <!-- Узкая инфо-строка в 1 ряд -->
+    <div class="stats-strip">
+      <span>Объектов: <b id="stat-count">0</b> (<b id="stat-name">Нет</b>)</span>
+      <span>Габариты: <b id="stat-size">0×0×0</b> мм</span>
+      <span>V: <b id="stat-vol">0</b> см³</span>
+      <span>Полиг: <b id="stat-poly">0</b></span>
+    </div>
+
+    <div class="caliper-strip" id="caliper-info">
+      📏 <b>Штангенциркуль:</b> ткните в 2 точки на модели
     </div>
   </div>
 
-  <!-- Нижняя панель -->
+  <!-- НИЖНЯЯ ПАНЕЛЬ СО СТАТИЧНОЙ КНОПКОЙ СВОРАЧИВАНИЯ -->
   <div class="bottom-dock" id="bottom-dock">
-    <div class="tabs">
-      <div class="tab active" onclick="app.switchTab(0)">➕ Фигуры/Крепеж</div>
-      <div class="tab" onclick="app.switchTab(1)">📐 Размеры</div>
-      <div class="tab" onclick="app.switchTab(2)">🛠 Булевы/Стол</div>
-      <div class="tab" onclick="app.switchTab(3)">⚖️ Вес/Цена</div>
-      <div class="tab" onclick="app.switchTab(4)">🚀 Экспорт</div>
-      <div class="tab tab-toggle" onclick="app.toggleDock()" id="dock-btn">▼</div>
+    <div class="dock-header">
+      <div class="tabs-scroll">
+        <div class="tab active" onclick="app.switchTab(0)">➕ Детали и Вырезы</div>
+        <div class="tab" onclick="app.switchTab(1)">📐 Размеры</div>
+        <div class="tab" onclick="app.switchTab(2)">🛠 Операции</div>
+        <div class="tab" onclick="app.switchTab(3)">🌐 Онлайн 3D</div>
+        <div class="tab" onclick="app.switchTab(4)">⚖️ Вес/Цена</div>
+        <div class="tab" onclick="app.switchTab(5)">🚀 Сохранить</div>
+      </div>
+      <!-- Закрепленная кнопка сворачивания панели -->
+      <button class="dock-toggle-static" onclick="app.toggleDock()" id="dock-btn" title="Свернуть/Развернуть">▼</button>
     </div>
 
-    <!-- Вкладка 0: Примитивы + Генератор крепежа -->
+    <!-- Вкладка 0: Примитивы, Корпуса, Радиодетали и Крепеж -->
     <div class="tab-content active">
-      <div class="section-title">Базовые тела (20 мм)</div>
+      <div class="section-title">Базовые фигуры и заготовки корпусов</div>
       <div class="grid-btns">
         <button onclick="app.addPrimitive('box')">🧊 Куб</button>
+        <button onclick="app.addPrimitive('enclosure')">📦 Корпус (Полый)</button>
+        <button onclick="app.addPrimitive('bracket')">📐 Уголок L</button>
         <button onclick="app.addPrimitive('cylinder')">🛢 Цилиндр</button>
         <button onclick="app.addPrimitive('tube')">⭕ Втулка</button>
         <button onclick="app.addPrimitive('sphere')">🔮 Сфера</button>
         <button onclick="app.addPrimitive('cone')">🔺 Конус</button>
+        <button onclick="app.addPrimitive('torus')">🍩 Кольцо</button>
       </div>
 
-      <div class="section-title">Готовые вырезы под крепеж (с допуском +0.2 мм)</div>
+      <div class="section-title">Фрезы под разъемы и электронику (с допуском +0.25 мм)</div>
       <div class="grid-btns">
-        <button onclick="app.addFastener('m3_bolt')" class="btn-warn">🔩 Болт М3 (потай)</button>
-        <button onclick="app.addFastener('m4_bolt')" class="btn-warn">🔩 Болт М4 (потай)</button>
-        <button onclick="app.addFastener('m5_bolt')" class="btn-warn">🔩 Болт М5 (потай)</button>
+        <button onclick="app.addElectronicsCutout('usb_c')" class="btn-info">🔌 USB Type-C</button>
+        <button onclick="app.addElectronicsCutout('usb_a')" class="btn-info">🔌 USB-A порт</button>
+        <button onclick="app.addElectronicsCutout('dc_jack')" class="btn-info">⚡ DC 5.5×2.1</button>
+        <button onclick="app.addElectronicsCutout('kcd1')" class="btn-info">🔘 Кнопка KCD1</button>
+        <button onclick="app.addElectronicsCutout('oled')" class="btn-info">📟 Экран 0.96"</button>
+        <button onclick="app.addElectronicsCutout('vents')" class="btn-info">🌬 Вент-решетка</button>
+      </div>
+
+      <div class="section-title">Фрезы под крепеж (Болты с потаем и Гайки)</div>
+      <div class="grid-btns">
+        <button onclick="app.addFastener('m3_bolt')" class="btn-warn">🔩 Болт М3</button>
+        <button onclick="app.addFastener('m4_bolt')" class="btn-warn">🔩 Болт М4</button>
+        <button onclick="app.addFastener('m5_bolt')" class="btn-warn">🔩 Болт М5</button>
         <button onclick="app.addFastener('m3_nut')" class="btn-warn">⬡ Гайка М3</button>
         <button onclick="app.addFastener('m4_nut')" class="btn-warn">⬡ Гайка М4</button>
         <button onclick="app.addFastener('m5_nut')" class="btn-warn">⬡ Гайка М5</button>
@@ -217,9 +249,9 @@
       </div>
     </div>
 
-    <!-- Вкладка 1: Точная трансформация -->
+    <!-- Вкладка 1: Размеры и Оси -->
     <div class="tab-content">
-      <div class="section-title">Точные габариты детали (в мм)</div>
+      <div class="section-title">Точные габариты выбранной детали (мм)</div>
       <div class="control-row">
         <label>Ширина X:</label>
         <input type="range" id="slide-sx" min="1" max="220" step="0.5" oninput="app.TransformFromUI('size', 'x', this.value)">
@@ -236,7 +268,7 @@
         <input type="number" id="num-sz" step="0.1" onchange="app.TransformFromUI('size', 'z', this.value)">
       </div>
 
-      <div class="section-title">Координаты на столе (мм)</div>
+      <div class="section-title">Позиция на столе (мм)</div>
       <div class="control-row">
         <label>Сдвиг X:</label>
         <input type="range" id="slide-px" min="-110" max="110" step="0.5" oninput="app.TransformFromUI('pos', 'x', this.value)">
@@ -262,7 +294,7 @@
       </div>
     </div>
 
-    <!-- Вкладка 2: Булевы операции и стол -->
+    <!-- Вкладка 2: Булевы операции и управление -->
     <div class="tab-content">
       <div class="section-title">Выравнивание на столе</div>
       <div class="grid-btns">
@@ -270,76 +302,100 @@
         <button onclick="app.centerSelected()">🎯 В центр (0,0)</button>
       </div>
 
-      <div class="section-title">Конструктор и Вычитание отверстий (CSG)</div>
+      <div class="section-title">Вычитание отверстий и Сборка (CSG)</div>
       <div class="grid-btns">
         <button id="btn-hole" onclick="app.toggleHoleMode()" class="btn-warn">🕳 Сделать «Фрезой» (Отверстием)</button>
-        <button onclick="app.applyBooleanAndMerge()" class="btn-accent">⚡ Вырезать отверстия / Объединить</button>
+        <button onclick="app.applyBooleanAndMerge()" class="btn-accent">⚡ Вырезать отверстия / Объединить всё</button>
       </div>
 
-      <div class="section-title">Управление сценой</div>
+      <div class="section-title">Действия с объектами</div>
       <div class="grid-btns">
-        <button onclick="app.duplicateSelected()">📋 Копия</button>
+        <button onclick="app.duplicateSelected()">📋 Дублировать</button>
         <button onclick="app.deleteSelected()" class="btn-danger">🗑 Удалить</button>
-        <button onclick="app.clearAll()" class="btn-danger">💥 Очистить всё</button>
+        <button onclick="app.clearAll()" class="btn-danger">💥 Очистить стол</button>
       </div>
     </div>
 
-    <!-- Вкладка 3: Калькулятор веса и стоимости печати -->
+    <!-- Вкладка 3: Онлайн поиск 3D моделей и прямая загрузка из интернета -->
     <div class="tab-content">
-      <div class="section-title">Параметры пластика и заполнения</div>
+      <div class="section-title">Поиск готовых STL/3MF моделей в мировых базах</div>
       <div class="control-row">
-        <label>Материал:</label>
+        <input type="text" id="online-query" placeholder="Например: корпус arduino, шестерня, кронштейн..." value="enclosure box">
+      </div>
+      <div class="grid-btns">
+        <button onclick="app.searchOnline('printables')" class="btn-accent">🔍 Printables</button>
+        <button onclick="app.searchOnline('thingiverse')" class="btn-info">🔍 Thingiverse</button>
+        <button onclick="app.searchOnline('makerworld')" class="btn-green">🔍 MakerWorld</button>
+        <button onclick="app.searchOnline('thangs')">🔍 Thangs 3D</button>
+        <button onclick="app.searchOnline('grabcad')">🔍 GrabCAD</button>
+      </div>
+
+      <div class="section-title">Прямая загрузка тестовых STL-моделей из облака сразу на стол</div>
+      <div class="grid-btns">
+        <button onclick="app.loadCloudSample('benchy')" class="btn-warn">⛵ 3DBenchy (Тест)</button>
+        <button onclick="app.loadCloudSample('bolt_nut')" class="btn-warn">🔩 Калибр-куб 20мм</button>
+      </div>
+
+      <div class="section-title">Загрузка собственного STL по прямой веб-ссылке (URL)</div>
+      <div class="control-row">
+        <input type="text" id="direct-stl-url" placeholder="Вставьте прямую https:// ссылку на .stl файл">
+        <button onclick="app.loadFromDirectUrl()" class="btn-accent">⬇️ Загрузить</button>
+      </div>
+    </div>
+
+    <!-- Вкладка 4: Калькулятор веса и стоимости -->
+    <div class="tab-content">
+      <div class="section-title">Расчет расхода пластика и цены</div>
+      <div class="control-row">
+        <label>Пластик:</label>
         <select id="calc-mat" onchange="app.updateCalculator()">
           <option value="1.27" selected>PETG (1.27 г/см³)</option>
           <option value="1.24">PLA (1.24 г/см³)</option>
           <option value="1.04">ABS (1.04 г/см³)</option>
-          <option value="1.21">TPU / Flex (1.21 г/см³)</option>
-          <option value="1.15">Nylon / PA (1.15 г/см³)</option>
+          <option value="1.21">TPU (1.21 г/см³)</option>
         </select>
       </div>
       <div class="control-row">
         <label>Заполнение:</label>
         <input type="range" id="calc-infill" min="10" max="100" step="5" value="25" oninput="app.updateCalculator()">
-        <b id="calc-infill-val" style="min-width:45px; text-align:right;">25%</b>
+        <b id="calc-infill-val" style="min-width:42px; text-align:right;">25%</b>
       </div>
       <div class="control-row">
-        <label>Цена катушки (1 кг):</label>
+        <label>Цена 1 кг:</label>
         <input type="number" id="calc-price" value="7500" step="500" oninput="app.updateCalculator()" style="width:100px;">
       </div>
-
       <div class="calc-card">
-        <div class="calc-item">
-          <span>Вес детали (100% литая)</span>
-          <b id="res-weight-solid">0 г</b>
-        </div>
-        <div class="calc-item">
-          <span>Реальный вес (со стенками)</span>
-          <b id="res-weight-real">0 г</b>
-        </div>
-        <div class="calc-item">
-          <span>Длина прутка (1.75 мм)</span>
-          <b id="res-length">0 м</b>
-        </div>
-        <div class="calc-item">
-          <span>Себестоимость пластика</span>
-          <b id="res-cost">0</b>
-        </div>
+        <div class="calc-item"><span>Литая (100%)</span><b id="res-weight-solid">0 г</b></div>
+        <div class="calc-item"><span>С учетом Infill</span><b id="res-weight-real">0 г</b></div>
+        <div class="calc-item"><span>Пруток 1.75мм</span><b id="res-length">0 м</b></div>
+        <div class="calc-item"><span>Стоимость</span><b id="res-cost">0</b></div>
       </div>
     </div>
 
-    <!-- Вкладка 4: Экспорт -->
+    <!-- Вкладка 5: Нативное сохранение в память Android и отправка в слайсер -->
     <div class="tab-content">
-      <div class="section-title">Прямая отправка в мобильный слайсер</div>
-      <div class="grid-btns">
-        <button onclick="app.exportModel('stl', true)" class="btn-accent" style="padding:14px;">📲 Отправить .STL в слайсер (Поделиться)</button>
+      <div class="section-title">Имя файла для сохранения</div>
+      <div class="control-row">
+        <label>Имя файла:</label>
+        <input type="text" id="export-filename" value="my_part_3d">
       </div>
-      <div class="section-title">Сохранить файл в Загрузки телефона</div>
+
+      <div class="section-title">Отправка напрямую в слайсер (Cura, Creality Cloud, Bambu, Telegram)</div>
       <div class="grid-btns">
-        <button onclick="app.exportModel('stl', false)">💾 Скачать .STL (Binary)</button>
-        <button onclick="app.exportModel('obj', false)">💾 Скачать .OBJ</button>
+        <button onclick="app.exportNative('stl', 'share')" class="btn-accent" style="padding:12px;">📲 Поделиться .STL (Отправить в слайсер)</button>
+        <button onclick="app.exportNative('obj', 'share')" class="btn-info" style="padding:12px;">📲 Поделиться .OBJ</button>
+      </div>
+
+      <div class="section-title">Сохранение файла в папку «Документы» (Documents) телефона</div>
+      <div class="grid-btns">
+        <button onclick="app.exportNative('stl', 'save')" class="btn-green" style="padding:12px;">💾 Сохранить .STL в телефон</button>
+        <button onclick="app.exportNative('obj', 'save')" style="padding:12px;">💾 Сохранить .OBJ в телефон</button>
       </div>
     </div>
   </div>
+
+  <!-- Подключаем глобальный мост Capacitor (доступен внутри APK) -->
+  <script src="capacitor.js"></script>
 
   <script type="module">
     import * as THREE from 'three';
@@ -355,14 +411,23 @@
 
     THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
+    // Конвертер бинарного буфера в Base64 для нативной записи через Capacitor Filesystem
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      return window.btoa(binary);
+    }
+
     class PrintApp {
       constructor() {
         this.objects = [];
         this.selected = null;
         this.renderMode = 'solid';
         this.gcodeObject = null;
-
-        // Штангенциркуль
         this.caliperActive = false;
         this.measurePoints = [];
         this.measureGroup = new THREE.Group();
@@ -376,11 +441,11 @@
       initScene() {
         const container = document.getElementById('canvas-container');
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x14171a);
+        this.scene.background = new THREE.Color(0x121518);
         this.scene.add(this.measureGroup);
 
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
-        this.camera.position.set(0, -240, 180);
+        this.camera.position.set(0, -230, 170);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -390,10 +455,9 @@
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
-        this.controls.target.set(0, 0, 20);
+        this.controls.target.set(0, 0, 15);
 
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.65);
-        this.scene.add(ambLight);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 0.65));
         const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.85);
         dirLight1.position.set(150, -150, 250);
         this.scene.add(dirLight1);
@@ -408,18 +472,18 @@
 
       initBuildPlate() {
         const size = 220;
-        const divisions = 22;
-        const grid = new THREE.GridHelper(size, divisions, 0xff6d00, 0x2f3640);
+        const grid = new THREE.GridHelper(size, 22, 0xff6d00, 0x2f3640);
         grid.rotation.x = Math.PI / 2;
         this.scene.add(grid);
 
-        const planeGeo = new THREE.PlaneGeometry(size, size);
-        const planeMat = new THREE.MeshBasicMaterial({ color: 0x1a1e24, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
-        const plane = new THREE.Mesh(planeGeo, planeMat);
+        const plane = new THREE.Mesh(
+          new THREE.PlaneGeometry(size, size),
+          new THREE.MeshBasicMaterial({ color: 0x181c22, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+        );
         plane.position.z = -0.1;
         this.scene.add(plane);
 
-        const axes = new THREE.AxesHelper(40);
+        const axes = new THREE.AxesHelper(35);
         axes.position.set(-size/2, -size/2, 0.2);
         this.scene.add(axes);
       }
@@ -445,19 +509,11 @@
           raycaster.setFromCamera(pointer, this.camera);
           const intersects = raycaster.intersectObjects(this.objects, false);
 
-          // Если включен режим Штангенциркуля
           if (this.caliperActive) {
-            if (intersects.length > 0) {
-              this.handleCaliperClick(intersects[0].point);
-            }
+            if (intersects.length > 0) this.handleCaliperClick(intersects[0].point);
             return;
           }
-
-          if (intersects.length > 0) {
-            this.selectObject(intersects[0].object);
-          } else {
-            this.selectObject(null);
-          }
+          this.selectObject(intersects.length > 0 ? intersects[0].object : null);
         });
 
         document.getElementById('file-input').addEventListener('change', (e) => {
@@ -465,94 +521,70 @@
         });
       }
 
-      // Логика Штангенциркуля (замер расстояния между двумя точками)
       toggleCaliper() {
         this.caliperActive = !this.caliperActive;
         document.getElementById('btn-caliper').classList.toggle('btn-active', this.caliperActive);
         const badge = document.getElementById('caliper-info');
         badge.style.display = this.caliperActive ? 'block' : 'none';
         this.clearCaliperPoints();
-        if (this.caliperActive) {
-          badge.innerHTML = '📏 <b>Штангенциркуль:</b> ткните точку 1 на детали';
-        }
+        if (this.caliperActive) badge.innerHTML = '📏 <b>Штангенциркуль:</b> ткните точку 1 на детали';
       }
 
       clearCaliperPoints() {
         this.measurePoints = [];
-        while (this.measureGroup.children.length > 0) {
-          this.measureGroup.remove(this.measureGroup.children[0]);
-        }
+        while (this.measureGroup.children.length > 0) this.measureGroup.remove(this.measureGroup.children[0]);
       }
 
       handleCaliperClick(point) {
         const badge = document.getElementById('caliper-info');
         if (this.measurePoints.length >= 2) this.clearCaliperPoints();
-
         this.measurePoints.push(point.clone());
 
-        // Рисуем яркую точку маркера
-        const dotGeo = new THREE.SphereGeometry(1.2, 16, 16);
-        const dotMat = new THREE.MeshBasicMaterial({ color: 0x00e676, depthTest: false });
-        const dot = new THREE.Mesh(dotGeo, dotMat);
+        const dot = new THREE.Mesh(
+          new THREE.SphereGeometry(1.2, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0x00e676, depthTest: false })
+        );
         dot.position.copy(point);
         this.measureGroup.add(dot);
 
         if (this.measurePoints.length === 1) {
           badge.innerHTML = '📏 Точка 1 задана. <b>Ткните точку 2!</b>';
-        } else if (this.measurePoints.length === 2) {
-          const p1 = this.measurePoints[0];
-          const p2 = this.measurePoints[1];
-          const dist = p1.distanceTo(p2);
+        } else {
+          const [p1, p2] = this.measurePoints;
+          const dist = p1.distanceTo(p2).toFixed(2);
           const dx = Math.abs(p2.x - p1.x).toFixed(2);
           const dy = Math.abs(p2.y - p1.y).toFixed(2);
           const dz = Math.abs(p2.z - p1.z).toFixed(2);
 
-          // Рисуем линию между точками
-          const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
-          const lineMat = new THREE.LineBasicMaterial({ color: 0x00e676, linewidth: 3, depthTest: false });
-          const line = new THREE.Line(lineGeo, lineMat);
+          const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([p1, p2]),
+            new THREE.LineBasicMaterial({ color: 0x00e676, depthTest: false })
+          );
           this.measureGroup.add(line);
-
-          badge.innerHTML = `📏 Длина: <b>${dist.toFixed(2)} мм</b><br><span style="font-size:10.5px; color:#ccc;">ΔX: ${dx} | ΔY: ${dy} | ΔZ: ${dz} мм</span>`;
+          badge.innerHTML = `📏 Длина: <b>${dist} мм</b> (ΔX:${dx} | ΔY:${dy} | ΔZ:${dz})`;
         }
       }
 
       showToast(msg, duration = 0) {
         const t = document.getElementById('toast');
-        t.innerText = msg;
+        t.innerHTML = msg;
         t.style.display = 'block';
-        if (duration > 0) setTimeout(() => { t.style.display = 'none'; }, duration);
+        if (this.toastTimer) clearTimeout(this.toastTimer);
+        if (duration > 0) this.toastTimer = setTimeout(() => { t.style.display = 'none'; }, duration);
       }
       hideToast() { document.getElementById('toast').style.display = 'none'; }
 
       createMaterial(isHole = false) {
         if (isHole) {
           return new THREE.MeshStandardMaterial({
-            color: 0xff5252, transparent: true, opacity: 0.5,
+            color: 0xff5252, transparent: true, opacity: 0.52,
             roughness: 0.4, wireframe: this.renderMode === 'wire'
           });
         }
         if (this.renderMode === 'overhang') {
           return new THREE.ShaderMaterial({
-            vertexShader: `
-              varying vec3 vNormal;
-              void main() {
-                vNormal = normalize(normalMatrix * normal);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-              }
-            `,
-            fragmentShader: `
-              varying vec3 vNormal;
-              void main() {
-                vec3 light = normalize(vec3(0.5, -0.5, 1.0));
-                float d = max(dot(vNormal, light), 0.25);
-                if (vNormal.z < -0.707) {
-                  gl_FragColor = vec4(1.0, 0.2, 0.2, 1.0);
-                } else {
-                  gl_FragColor = vec4(vec3(0.2, 0.7, 0.9) * d, 1.0);
-                }
-              }
-            `,
+            vertexShader: `varying vec3 vNormal; void main() { vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `varying vec3 vNormal; void main() { vec3 l = normalize(vec3(0.5,-0.5,1.0)); float d = max(dot(vNormal,l), 0.25); gl_FragColor = (vNormal.z < -0.707) ? vec4(1.0,0.2,0.2,1.0) : vec4(vec3(0.2,0.7,0.9)*d, 1.0); }`,
             side: THREE.DoubleSide
           });
         }
@@ -563,10 +595,7 @@
       }
 
       addMeshFromGeometry(geometry, name = 'Деталь', isHole = false) {
-        if (this.gcodeObject) {
-          this.scene.remove(this.gcodeObject);
-          this.gcodeObject = null;
-        }
+        if (this.gcodeObject) { this.scene.remove(this.gcodeObject); this.gcodeObject = null; }
         geometry.computeVertexNormals();
         geometry.computeBoundingBox();
 
@@ -589,32 +618,92 @@
         this.updateStats();
       }
 
-      // Генерация базовых примитивов + Втулки
+      // Расширенные примитивы + Полый корпус РЭА + Г-образный кронштейн
       addPrimitive(type) {
         let geo, name = 'Фигура';
+        const evaluator = new Evaluator();
         switch (type) {
           case 'box': geo = new THREE.BoxGeometry(20, 20, 20); name = 'Куб'; break;
+          case 'enclosure': {
+            // Полая коробка для электроники 60x40x25 мм со стенкой 2 мм
+            const outer = new THREE.BoxGeometry(60, 40, 25);
+            const inner = new THREE.BoxGeometry(56, 36, 25);
+            inner.translate(0, 0, 2); // Дно 2 мм
+            geo = evaluator.evaluate(new Brush(outer), new Brush(inner), SUBTRACTION).geometry;
+            name = 'Корпус_РЭА'; break;
+          }
+          case 'bracket': {
+            // Крепежный Г-образный уголок 30x30x20 мм толщиной 4 мм
+            const full = new THREE.BoxGeometry(20, 30, 30);
+            const cut = new THREE.BoxGeometry(22, 26, 26);
+            cut.translate(0, 4, 4);
+            geo = evaluator.evaluate(new Brush(full), new Brush(cut), SUBTRACTION).geometry;
+            name = 'Уголок_L'; break;
+          }
           case 'cylinder':
             geo = new THREE.CylinderGeometry(10, 10, 20, 48);
             geo.rotateX(Math.PI / 2); name = 'Цилиндр'; break;
           case 'tube': {
-            // Создаем втулку с отверстием через CSG
             const outer = new THREE.CylinderGeometry(10, 10, 20, 48);
             const inner = new THREE.CylinderGeometry(5, 5, 22, 48);
             outer.rotateX(Math.PI / 2); inner.rotateX(Math.PI / 2);
-            const evaluator = new Evaluator();
-            const res = evaluator.evaluate(new Brush(outer), new Brush(inner), SUBTRACTION);
-            geo = res.geometry; name = 'Втулка'; break;
+            geo = evaluator.evaluate(new Brush(outer), new Brush(inner), SUBTRACTION).geometry;
+            name = 'Втулка'; break;
           }
           case 'sphere': geo = new THREE.SphereGeometry(12, 36, 36); name = 'Сфера'; break;
           case 'cone':
             geo = new THREE.ConeGeometry(12, 24, 48);
             geo.rotateX(Math.PI / 2); name = 'Конус'; break;
+          case 'torus': geo = new THREE.TorusGeometry(12, 3.5, 24, 64); name = 'Кольцо'; break;
         }
         this.addMeshFromGeometry(geo, name, false);
       }
 
-      // Генератор готовых вырезов под болты М3/М4/М5 с потайной шляпкой и гайки
+      // Готовые вырезы (Фрезы) под радиодетали и разъемы (USB-C, USB-A, DC Jack, KCD1, OLED, Вентиляция)
+      addElectronicsCutout(type) {
+        let geo, name = 'Вырез';
+        const evaluator = new Evaluator();
+        switch (type) {
+          case 'usb_c': {
+            // Стандарт USB Type-C: скругленный паз 9.2 x 3.4 мм, глубина фрезы 16 мм
+            const w = 9.2, h = 3.4, r = h / 2, len = 16;
+            const centerBox = new THREE.BoxGeometry(w - h, len, h);
+            const cylL = new THREE.CylinderGeometry(r, r, len, 24);
+            cylL.translate(-(w - h)/2, 0, 0);
+            const cylR = new THREE.CylinderGeometry(r, r, len, 24);
+            cylR.translate((w - h)/2, 0, 0);
+            let res = evaluator.evaluate(new Brush(centerBox), new Brush(cylL), ADDITION);
+            res = evaluator.evaluate(res, new Brush(cylR), ADDITION);
+            geo = res.geometry; name = 'Фреза_USB_C'; break;
+          }
+          case 'usb_a':
+            geo = new THREE.BoxGeometry(14.5, 18, 7.0); name = 'Фреза_USB_A'; break;
+          case 'dc_jack':
+            // Вырез под панельное гнездо питания 5.5x2.1 (диаметр резьбы 8.2 мм или 11.2 мм)
+            geo = new THREE.CylinderGeometry(4.1, 4.1, 18, 36);
+            name = 'Фреза_DC_Jack'; break;
+          case 'kcd1':
+            // Классический клавишный сетевой выключатель KCD1 (посадочное 19.2 x 13.0 мм)
+            geo = new THREE.BoxGeometry(13.0, 18, 19.2); name = 'Фреза_KCD1'; break;
+          case 'oled':
+            // Окно под экран OLED 0.96" (25 x 14 мм)
+            geo = new THREE.BoxGeometry(25.0, 15, 14.0); name = 'Окно_OLED_096'; break;
+          case 'vents': {
+            // Решетка вентиляции из 4 прорезей (жабры)
+            const slots = [];
+            for (let i = 0; i < 4; i++) {
+              const s = new THREE.BoxGeometry(25, 16, 2.5);
+              s.translate(0, 0, i * 5);
+              slots.push(s);
+            }
+            geo = BufferGeometryUtils.mergeGeometries(slots);
+            name = 'Фреза_Вентиляция'; break;
+          }
+        }
+        this.addMeshFromGeometry(geo, name, true);
+        this.showToast(`Фреза «${name}» добавлена!<br>Совместите со стенкой корпуса и нажмите «Вырезать»`, 2600);
+      }
+
       addFastener(type) {
         const specs = {
           m3_bolt: { d: 3.2, hd: 6.0, hh: 3.2, len: 20, name: 'Болт_М3' },
@@ -631,17 +720,67 @@
           const head = new THREE.CylinderGeometry(s.hd/2, s.hd/2, s.hh, 36);
           head.rotateX(Math.PI / 2);
           head.translate(0, 0, s.len/2 + s.hh/2 - 0.1);
-          const evaluator = new Evaluator();
-          const res = evaluator.evaluate(new Brush(shaft), new Brush(head), ADDITION);
+          const res = new Evaluator().evaluate(new Brush(shaft), new Brush(head), ADDITION);
           this.addMeshFromGeometry(res.geometry, s.name, true);
         } else {
-          // Шестигранник под гайку (радиус описанной окружности = ширина под ключ / cos(30°))
           const radius = s.w / Math.sqrt(3);
           const nutGeo = new THREE.CylinderGeometry(radius, radius, s.h, 6);
           nutGeo.rotateX(Math.PI / 2);
           this.addMeshFromGeometry(nutGeo, s.name, true);
         }
-        this.showToast(`Создана фреза: ${s.name}. Передвиньте в деталь и нажмите «Вырезать»!`, 2500);
+      }
+
+      // ВЫХОД В ИНТЕРНЕТ: Поиск по крупнейшим 3D-базам и прямая загрузка моделей из облака
+      searchOnline(platform) {
+        const q = encodeURIComponent(document.getElementById('online-query').value.trim() || '3d print');
+        const urls = {
+          printables: `https://www.printables.com/search/models?q=${q}`,
+          thingiverse: `https://www.thingiverse.com/search?q=${q}&type=things`,
+          makerworld: `https://makerworld.com/en/search/models?keyword=${q}`,
+          thangs: `https://thangs.com/search/${q}`,
+          grabcad: `https://grabcad.com/library?query=${q}`
+        };
+        window.open(urls[platform], '_system');
+      }
+
+      async loadCloudSample(sample) {
+        if (sample === 'bolt_nut') {
+          // Генерируем калибровочный кубик XYZ 20x20x20 мм с вырезами
+          const cube = new THREE.BoxGeometry(20, 20, 20);
+          const hole = new THREE.CylinderGeometry(5, 5, 22, 32);
+          const res = new Evaluator().evaluate(new Brush(cube), new Brush(hole), SUBTRACTION);
+          this.addMeshFromGeometry(res.geometry, 'Калибр_Куб_20мм', false);
+          this.showToast('Калибровочный куб 20×20×20 мм создан!', 2000);
+          return;
+        }
+        // Прямая загрузка тестовой 3D-модели из официального репозитория Three.js через интернет
+        const url = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/stl/binary/pr2_head_pan.stl';
+        await this.fetchAndLoadSTL(url, 'Cloud_Part.stl');
+      }
+
+      async loadFromDirectUrl() {
+        const url = document.getElementById('direct-stl-url').value.trim();
+        if (!url.startsWith('http')) {
+          alert('Введите корректную ссылку, начинающуюся с https://');
+          return;
+        }
+        await this.fetchAndLoadSTL(url, 'Online_Model.stl');
+      }
+
+      async fetchAndLoadSTL(url, name) {
+        try {
+          this.showToast('🌐 Скачивание 3D-модели из интернета...');
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Сервер вернул код ' + res.status);
+          const buffer = await res.arrayBuffer();
+          const geo = new STLLoader().parse(buffer);
+          this.addMeshFromGeometry(geo, name, false);
+          this.layFlat();
+          this.showToast('✅ Модель успешно загружена из интернета!', 2200);
+        } catch (e) {
+          this.hideToast();
+          alert('Не удалось загрузить файл напрямую (проверьте интернет или ссылку): ' + e.message);
+        }
       }
 
       loadFile(file) {
@@ -653,11 +792,9 @@
           try {
             const contents = ev.target.result;
             if (ext === 'stl') {
-              const geo = new STLLoader().parse(contents);
-              this.addMeshFromGeometry(geo, file.name);
+              this.addMeshFromGeometry(new STLLoader().parse(contents), file.name);
             } else if (ext === 'obj') {
-              const text = new TextDecoder().decode(contents);
-              const obj = new OBJLoader().parse(text);
+              const obj = new OBJLoader().parse(new TextDecoder().decode(contents));
               const geos = [];
               obj.traverse(c => { if (c.isMesh) geos.push(c.geometry.clone()); });
               if (geos.length > 0) this.addMeshFromGeometry(BufferGeometryUtils.mergeGeometries(geos), file.name);
@@ -667,14 +804,13 @@
               group.traverse(c => { if (c.isMesh) geos.push(c.geometry.clone()); });
               if (geos.length > 0) this.addMeshFromGeometry(BufferGeometryUtils.mergeGeometries(geos), file.name);
             } else if (ext === 'gcode' || ext === 'gco') {
-              const text = new TextDecoder().decode(contents);
               if (this.gcodeObject) this.scene.remove(this.gcodeObject);
-              const gcode = new GCodeLoader().parse(text);
+              const gcode = new GCodeLoader().parse(new TextDecoder().decode(contents));
               gcode.rotation.x = Math.PI / 2;
               gcode.position.set(-110, -110, 0);
               this.gcodeObject = gcode;
               this.scene.add(gcode);
-              this.showToast('Траектория G-Code загружена!', 2000);
+              this.showToast('G-Code загружен!', 2000);
               return;
             }
             this.hideToast();
@@ -692,13 +828,8 @@
           this.boxHelper.setFromObject(mesh);
           this.boxHelper.visible = true;
           const btnHole = document.getElementById('btn-hole');
-          if (mesh.userData.isHole) {
-            btnHole.classList.add('btn-active');
-            btnHole.innerText = '🕳 Режим: Фреза (Отверстие)';
-          } else {
-            btnHole.classList.remove('btn-active');
-            btnHole.innerText = '🕳 Сделать «Фрезой» (Отверстием)';
-          }
+          btnHole.classList.toggle('btn-active', mesh.userData.isHole);
+          btnHole.innerText = mesh.userData.isHole ? '🕳 Режим: Фреза (Отверстие)' : '🕳 Сделать «Фрезой» (Отверстием)';
         } else {
           this.boxHelper.visible = false;
         }
@@ -730,11 +861,9 @@
         if (!this.selected) return;
         const num = parseFloat(val);
         if (isNaN(num)) return;
-
         if (mode === 'pos') {
           this.selected.position[axis] = num;
-        } else if (mode === 'size') {
-          if (num <= 0.1) return;
+        } else if (mode === 'size' && num > 0.1) {
           const { size } = this.getMeshDimensions(this.selected);
           if (size[axis] > 0) this.selected.scale[axis] *= (num / size[axis]);
         }
@@ -784,7 +913,7 @@
           return;
         }
 
-        this.showToast('Вычисление 3D-геометрии...');
+        this.showToast('⚡ Вычисление 3D-геометрии...');
         setTimeout(() => {
           try {
             const evaluator = new Evaluator();
@@ -803,9 +932,9 @@
 
             const finalGeo = resultBrush.geometry.clone();
             this.clearAll(false);
-            this.addMeshFromGeometry(finalGeo, 'Деталь_готовая', false);
+            this.addMeshFromGeometry(finalGeo, 'Готовая_деталь', false);
             this.layFlat();
-            this.showToast('Операция выполнена!', 1800);
+            this.showToast('✅ Вырезы применены, деталь объединена!', 1800);
           } catch (e) {
             alert('Ошибка булевой операции: ' + e.message);
             this.hideToast();
@@ -874,7 +1003,7 @@
         document.getElementById('stat-count').innerText = this.objects.length;
         if (!this.selected) {
           document.getElementById('stat-name').innerText = 'Нет';
-          document.getElementById('stat-size').innerText = '0 × 0 × 0';
+          document.getElementById('stat-size').innerText = '0×0×0';
           document.getElementById('stat-vol').innerText = '0';
           document.getElementById('stat-poly').innerText = '0';
           this.updateCalculator(0);
@@ -886,13 +1015,12 @@
         const vol = this.calculateVolumeCm3(this.selected);
 
         document.getElementById('stat-name').innerText = this.selected.name;
-        document.getElementById('stat-size').innerText = `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}`;
+        document.getElementById('stat-size').innerText = `${size.x.toFixed(1)}×${size.y.toFixed(1)}×${size.z.toFixed(1)}`;
         document.getElementById('stat-vol').innerText = vol.toFixed(2);
         document.getElementById('stat-poly').innerText = Math.round(polys);
         this.updateCalculator(vol);
       }
 
-      // Инженерный калькулятор веса пластика и стоимости
       updateCalculator(volOverride) {
         const vol = (volOverride !== undefined) ? volOverride : (this.selected ? this.calculateVolumeCm3(this.selected) : 0);
         const density = parseFloat(document.getElementById('calc-mat').value) || 1.27;
@@ -900,13 +1028,9 @@
         const spoolPrice = parseFloat(document.getElementById('calc-price').value) || 0;
 
         document.getElementById('calc-infill-val').innerText = infill + '%';
-
-        // В FDM печати периметры (стенки + крышки) занимают ~30% объема детали, остальное — заполнение
         const effectiveFactor = 0.30 + 0.70 * (infill / 100);
         const weightSolid = vol * density;
         const weightReal = weightSolid * effectiveFactor;
-
-        // Длина прутка 1.75 мм (площадь сечения 2.405 мм² = 0.02405 см³ на 1 см длины)
         const lengthMeters = (vol * effectiveFactor) / 2.405;
         const cost = (weightReal / 1000) * spoolPrice;
 
@@ -916,15 +1040,23 @@
         document.getElementById('res-cost').innerText = Math.round(cost).toLocaleString();
       }
 
-      async exportModel(format, shareToSlicer) {
+      // НАСТОЯЩЕЕ СОХРАНЕНИЕ В ПАМЯТЬ ТЕЛЕФОНА И ОТПРАВКА В СЛАЙСЕР ЧЕРЕЗ НАТИВНЫЕ ПЛАГИНЫ CAPACITOR
+      async exportNative(format, actionType) {
         const solids = this.objects.filter(o => !o.userData.isHole);
         if (solids.length === 0) {
-          alert('На столе нет твердых деталей для экспорта!');
+          alert('На столе нет деталей для сохранения! Добавьте хотя бы одну фигуру.');
           return;
         }
 
+        // Если на столе есть невырезанные красные «фрезы», предупредим и предложим автоматически применить их
+        const holes = this.objects.filter(o => o.userData.isHole);
+        if (holes.length > 0 && confirm('На столе есть красные вырезы-фрезы. Вырезать ими отверстия перед сохранением?')) {
+          this.applyBooleanAndMerge();
+          await new Promise(r => setTimeout(r, 250));
+        }
+
         const exportGroup = new THREE.Group();
-        solids.forEach(m => {
+        this.objects.filter(o => !o.userData.isHole).forEach(m => {
           m.updateMatrixWorld();
           const clone = m.clone();
           clone.geometry = m.geometry.clone().applyMatrix4(m.matrixWorld);
@@ -932,45 +1064,103 @@
           exportGroup.add(clone);
         });
 
-        let blob, filename;
+        let rawName = document.getElementById('export-filename').value.trim() || 'model_3d';
+        rawName = rawName.replace(/[^a-zA-Z0-9а-яА-Я_-]/g, '_');
+        const filename = `${rawName}.${format}`;
+
+        let base64Data = '';
+        let blob = null;
+
         if (format === 'stl') {
           const result = new STLExporter().parse(exportGroup, { binary: true });
-          blob = new Blob([result], { type: 'model/stl' });
-          filename = 'part_3dcad.stl';
+          const buffer = result.buffer ? result.buffer : result;
+          base64Data = arrayBufferToBase64(buffer);
+          blob = new Blob([buffer], { type: 'application/sla' });
         } else {
-          const result = new OBJExporter().parse(exportGroup);
-          blob = new Blob([result], { type: 'text/plain' });
-          filename = 'part_3dcad.obj';
+          const text = new OBJExporter().parse(exportGroup);
+          const encoded = new TextEncoder().encode(text);
+          base64Data = arrayBufferToBase64(encoded.buffer);
+          blob = new Blob([text], { type: 'text/plain' });
         }
 
-        const file = new File([blob], filename, { type: blob.type });
-        if (shareToSlicer && navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Проверяем, запущены ли мы внутри Android APK с нативными плагинами Capacitor
+        const cap = window.Capacitor;
+        if (cap && cap.Plugins && cap.Plugins.Filesystem) {
           try {
-            await navigator.share({ title: 'Отправить в слайсер', files: [file] });
-            return;
-          } catch (e) { console.log('Отмена шаринга'); }
+            const { Filesystem, Share } = cap.Plugins;
+
+            if (actionType === 'share' && Share) {
+              this.showToast('Подготовка файла для слайсера...');
+              // Записываем файл в системный кэш Android и передаем его URI в системное меню Поделиться
+              const written = await Filesystem.writeFile({
+                path: filename,
+                data: base64Data,
+                directory: 'CACHE'
+              });
+              this.hideToast();
+              await Share.share({
+                title: `3D Модель: ${filename}`,
+                text: 'Отправка 3D-модели в слайсер',
+                url: written.uri,
+                dialogTitle: 'Выберите слайсер или приложение'
+              });
+              return;
+            } else {
+              // Нативное сохранение в системную папку «Документы» (Documents) телефона
+              this.showToast('Запись файла в память телефона...');
+              const saved = await Filesystem.writeFile({
+                path: filename,
+                data: base64Data,
+                directory: 'DOCUMENTS',
+                recursive: true
+              });
+              this.showToast(`✅ <b>Файл успешно сохранен в телефон!</b><br><br>Папка: <b>Документы (Documents)</b><br>Имя: <b>${filename}</b>`, 4500);
+
+              // Дополнительно предлагаем сразу открыть меню «Поделиться», если нужно перекинуть в Загрузки/Telegram
+              return;
+            }
+          } catch (nativeErr) {
+            // Если вдруг папка Documents заблокирована прошивкой телефона (бывает на некоторых MIUI/HyperOS),
+            // автоматически открываем системное окно Android «Поделиться / Сохранить в...», которое работает на 100% прошивок!
+            try {
+              const { Filesystem, Share } = cap.Plugins;
+              const fallbackFile = await Filesystem.writeFile({
+                path: filename,
+                data: base64Data,
+                directory: 'CACHE'
+              });
+              this.hideToast();
+              await Share.share({
+                title: `Сохранить ${filename}`,
+                url: fallbackFile.uri,
+                dialogTitle: 'Сохранить файл на устройство или отправить в слайсер'
+              });
+              return;
+            } catch (err2) {
+              alert('Ошибка записи файла: ' + err2.message);
+              this.hideToast();
+              return;
+            }
+          }
         }
 
+        // Резервный способ, если открыто просто в браузере на ПК
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = filename;
         link.click();
-        this.showToast(`Файл ${filename} сохранен!`, 2500);
+        this.showToast(`Файл ${filename} скачан!`, 2500);
       }
 
       resetCamera() {
-        this.camera.position.set(0, -240, 180);
-        this.controls.target.set(0, 0, 20);
+        this.camera.position.set(0, -230, 170);
+        this.controls.target.set(0, 0, 15);
         this.controls.update();
       }
 
       switchTab(idx) {
-        document.querySelectorAll('.tab').forEach((t, i) => {
-          if (i < 5) t.classList.toggle('active', i === idx);
-        });
-        document.querySelectorAll('.tab-content').forEach((c, i) => {
-          c.classList.toggle('active', i === idx);
-        });
+        document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+        document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === idx));
         document.getElementById('bottom-dock').classList.remove('dock-Minimized');
         document.getElementById('dock-btn').innerText = '▼';
       }
