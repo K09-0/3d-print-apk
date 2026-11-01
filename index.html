@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Print CAD Pro v3.0</title>
+  <title>Print CAD Pro v4.0 + Ender-3 Slicer</title>
   <style>
     :root {
       --bg-dark: #121518;
@@ -26,7 +26,7 @@
     }
     #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
 
-    /* НОВАЯ КОМПАКТНАЯ ГОРИЗОНТАЛЬНАЯ ШАПКА ВЕРСИИ 3.0 */
+    /* Компактная горизонтальная верхняя шапка */
     .top-header {
       position: absolute; top: 6px; left: 6px; right: 6px; z-index: 10;
       display: flex; flex-direction: column; gap: 4px; pointer-events: none;
@@ -39,18 +39,17 @@
     }
     .brand-mini { display: flex; align-items: center; gap: 6px; }
     .brand-mini svg { width: 22px; height: 22px; flex-shrink: 0; }
-    .brand-mini-title { font-size: 12px; font-weight: 800; letter-spacing: 0.3px; line-height: 1.1; }
+    .brand-mini-title { font-size: 11.5px; font-weight: 800; letter-spacing: 0.3px; line-height: 1.1; }
     .brand-mini-title span { color: var(--accent); display: block; font-size: 9px; font-weight: 700; }
 
-    .top-btns { display: flex; gap: 5px; align-items: center; }
-    .top-btns button { padding: 6px 9px; font-size: 11.5px; border-radius: 6px; }
+    .top-btns { display: flex; gap: 4px; align-items: center; }
+    .top-btns button { padding: 6px 8px; font-size: 11px; border-radius: 6px; }
 
-    /* Компактная горизонтальная строка статистики в 1 линию */
     .stats-strip {
       display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
       background: rgba(20, 23, 26, 0.88); border: 1px solid var(--border);
       padding: 4px 10px; border-radius: 6px; font-size: 11px; color: var(--text-muted);
-      pointer-events: auto; gap: 8px;
+      pointer-events: auto; gap: 6px;
     }
     .stats-strip b { color: var(--accent); font-weight: 700; }
 
@@ -74,12 +73,12 @@
     .btn-warn { background: rgba(255, 171, 64, 0.15); color: var(--warn); border-color: var(--warn); }
     .btn-active { border-color: var(--accent); color: var(--accent); background: rgba(255, 109, 0, 0.18); }
 
-    /* Нижняя панель с ЗАКРЕПЛЕННОЙ кнопкой сворачивания */
+    /* Нижняя панель со статичной кнопкой сворачивания */
     .bottom-dock {
       position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
       background: var(--panel-bg); border-top: 1px solid var(--border);
       backdrop-filter: blur(8px); display: flex; flex-direction: column;
-      max-height: 54vh; transition: transform 0.25s ease;
+      max-height: 55vh; transition: transform 0.25s ease;
     }
     .dock-Minimized { transform: translateY(calc(100% - 42px)); }
 
@@ -93,11 +92,10 @@
     .tab {
       flex: 1; text-align: center; line-height: 42px; font-size: 11.5px; font-weight: 600;
       color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
-      white-space: nowrap; padding: 0 10px;
+      white-space: nowrap; padding: 0 9px;
     }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(255,255,255,0.03); }
 
-    /* Статичная кнопка сворачивания справа */
     .dock-toggle-static {
       width: 46px; flex-shrink: 0; background: #1e232a; color: var(--accent);
       border: none; border-left: 1px solid var(--border); border-radius: 0;
@@ -114,7 +112,7 @@
       gap: 8px; margin-bottom: 6px; background: rgba(0,0,0,0.28);
       padding: 5px 10px; border-radius: 7px;
     }
-    .control-row label { font-size: 11.5px; font-weight: 600; min-width: 68px; color: var(--text-muted); }
+    .control-row label { font-size: 11.5px; font-weight: 600; min-width: 72px; color: var(--text-muted); }
     .control-row input[type="range"] { flex: 1; accent-color: var(--accent); }
     .control-row input[type="number"], .control-row input[type="text"], .control-row select {
       width: 72px; background: #121518; border: 1px solid var(--border);
@@ -124,13 +122,12 @@
     .control-row select { width: auto; flex: 1; text-align: left; padding: 5px; }
     .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); margin: 7px 0 5px; font-weight: 700; }
 
-    .calc-card {
-      background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 8px;
-      padding: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px;
+    .slicer-summary {
+      background: rgba(0, 230, 118, 0.08); border: 1px solid var(--accent-green);
+      border-radius: 8px; padding: 8px 10px; font-size: 11.5px; margin: 8px 0;
+      display: none; line-height: 1.5;
     }
-    .calc-item { text-align: center; padding: 5px; background: #1a1e24; border-radius: 6px; }
-    .calc-item span { display: block; font-size: 10.5px; color: var(--text-muted); }
-    .calc-item b { font-size: 14px; color: var(--accent-green); }
+    .slicer-summary b { color: var(--accent-green); }
 
     #toast {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -157,7 +154,7 @@
   <div id="canvas-container"></div>
   <div id="toast">Обработка...</div>
 
-  <!-- КОМПАКТНАЯ ГОРИЗОНТАЛЬНАЯ ВЕРХНЯЯ ПАНЕЛЬ -->
+  <!-- Компактная верхняя панель -->
   <div class="top-header">
     <div class="top-row-main">
       <div class="brand-mini">
@@ -167,7 +164,7 @@
           <path d="M22 8H42V18L36 28H28L22 18V8Z" fill="#FF6D00" stroke="#14171A" stroke-width="2"/>
           <line x1="32" y1="28" x2="32" y2="38" stroke="#00E676" stroke-width="3" stroke-linecap="round"/>
         </svg>
-        <div class="brand-mini-title">PRINT CAD<span>PRO v3.0</span></div>
+        <div class="brand-mini-title">PRINT CAD<span>ENDER-3 v4.0</span></div>
       </div>
 
       <div class="top-btns">
@@ -175,14 +172,13 @@
         <input type="file" id="file-input" accept=".stl,.obj,.3mf,.gcode,.gco">
         <button id="btn-caliper" onclick="app.toggleCaliper()">📏 Замер</button>
         <button onclick="app.resetCamera()">🎥 Вид</button>
-        <button onclick="app.switchTab(5)" class="btn-green">🚀 Экспорт</button>
+        <button onclick="app.switchTab(3)" class="btn-green">🔪 Слайсер</button>
       </div>
     </div>
 
-    <!-- Узкая инфо-строка в 1 ряд -->
     <div class="stats-strip">
-      <span>Объектов: <b id="stat-count">0</b> (<b id="stat-name">Нет</b>)</span>
-      <span>Габариты: <b id="stat-size">0×0×0</b> мм</span>
+      <span>Деталей: <b id="stat-count">0</b> (<b id="stat-name">Нет</b>)</span>
+      <span>Размер: <b id="stat-size">0×0×0</b> мм</span>
       <span>V: <b id="stat-vol">0</b> см³</span>
       <span>Полиг: <b id="stat-poly">0</b></span>
     </div>
@@ -192,19 +188,18 @@
     </div>
   </div>
 
-  <!-- НИЖНЯЯ ПАНЕЛЬ СО СТАТИЧНОЙ КНОПКОЙ СВОРАЧИВАНИЯ -->
+  <!-- Нижняя панель со статичной кнопкой сворачивания справа -->
   <div class="bottom-dock" id="bottom-dock">
     <div class="dock-header">
       <div class="tabs-scroll">
         <div class="tab active" onclick="app.switchTab(0)">➕ Детали и Вырезы</div>
         <div class="tab" onclick="app.switchTab(1)">📐 Размеры</div>
         <div class="tab" onclick="app.switchTab(2)">🛠 Операции</div>
-        <div class="tab" onclick="app.switchTab(3)">🌐 Онлайн 3D</div>
-        <div class="tab" onclick="app.switchTab(4)">⚖️ Вес/Цена</div>
-        <div class="tab" onclick="app.switchTab(5)">🚀 Сохранить</div>
+        <div class="tab" onclick="app.switchTab(3)">🔪 Слайсер Ender-3</div>
+        <div class="tab" onclick="app.switchTab(4)">🌐 Онлайн 3D</div>
+        <div class="tab" onclick="app.switchTab(5)">🚀 Экспорт STL</div>
       </div>
-      <!-- Закрепленная кнопка сворачивания панели -->
-      <button class="dock-toggle-static" onclick="app.toggleDock()" id="dock-btn" title="Свернуть/Развернуть">▼</button>
+      <button class="dock-toggle-static" onclick="app.toggleDock()" id="dock-btn">▼</button>
     </div>
 
     <!-- Вкладка 0: Примитивы, Корпуса, Радиодетали и Крепеж -->
@@ -212,7 +207,7 @@
       <div class="section-title">Базовые фигуры и заготовки корпусов</div>
       <div class="grid-btns">
         <button onclick="app.addPrimitive('box')">🧊 Куб</button>
-        <button onclick="app.addPrimitive('enclosure')">📦 Корпус (Полый)</button>
+        <button onclick="app.addPrimitive('enclosure')">📦 Корпус РЭА</button>
         <button onclick="app.addPrimitive('bracket')">📐 Уголок L</button>
         <button onclick="app.addPrimitive('cylinder')">🛢 Цилиндр</button>
         <button onclick="app.addPrimitive('tube')">⭕ Втулка</button>
@@ -221,14 +216,14 @@
         <button onclick="app.addPrimitive('torus')">🍩 Кольцо</button>
       </div>
 
-      <div class="section-title">Фрезы под разъемы и электронику (с допуском +0.25 мм)</div>
+      <div class="section-title">Фрезы под разъемы и электронику (+0.25 мм)</div>
       <div class="grid-btns">
         <button onclick="app.addElectronicsCutout('usb_c')" class="btn-info">🔌 USB Type-C</button>
         <button onclick="app.addElectronicsCutout('usb_a')" class="btn-info">🔌 USB-A порт</button>
         <button onclick="app.addElectronicsCutout('dc_jack')" class="btn-info">⚡ DC 5.5×2.1</button>
         <button onclick="app.addElectronicsCutout('kcd1')" class="btn-info">🔘 Кнопка KCD1</button>
         <button onclick="app.addElectronicsCutout('oled')" class="btn-info">📟 Экран 0.96"</button>
-        <button onclick="app.addElectronicsCutout('vents')" class="btn-info">🌬 Вент-решетка</button>
+        <button onclick="app.addElectronicsCutout('vents')" class="btn-info">🌬 Вент-жабры</button>
       </div>
 
       <div class="section-title">Фрезы под крепеж (Болты с потаем и Гайки)</div>
@@ -294,7 +289,7 @@
       </div>
     </div>
 
-    <!-- Вкладка 2: Булевы операции и управление -->
+    <!-- Вкладка 2: Булевы операции -->
     <div class="tab-content">
       <div class="section-title">Выравнивание на столе</div>
       <div class="grid-btns">
@@ -316,11 +311,73 @@
       </div>
     </div>
 
-    <!-- Вкладка 3: Онлайн поиск 3D моделей и прямая загрузка из интернета -->
+    <!-- Вкладка 3: ВСТРОЕННЫЙ СЛАЙСЕР ДЛЯ ENDER-3 (Marlin G-Code) -->
+    <div class="tab-content">
+      <div class="section-title">1. Профиль филамента (Сопло 0.4 мм / Пруток 1.75 мм)</div>
+      <div class="grid-btns">
+        <button id="prof-petg" class="btn-active" onclick="app.setFilamentProfile('petg')">🔥 PETG (235/75°)</button>
+        <button id="prof-pla" onclick="app.setFilamentProfile('pla')">🌱 PLA (205/60°)</button>
+        <button id="prof-abs" onclick="app.setFilamentProfile('abs')">🛡 ABS (245/100°)</button>
+        <button id="prof-tpu" onclick="app.setFilamentProfile('tpu')">🛞 TPU (220/50°)</button>
+      </div>
+
+      <div class="control-row">
+        <label>Сопло / Стол:</label>
+        <input type="number" id="sl-nozzle" value="235"> °C
+        <input type="number" id="sl-bed" value="75"> °C
+        <label style="min-width:45px; margin-left:6px;">Скорость:</label>
+        <input type="number" id="sl-speed" value="45">
+      </div>
+
+      <div class="control-row">
+        <label>Высота слоя:</label>
+        <select id="sl-layer">
+          <option value="0.16">0.16 мм (Точно)</option>
+          <option value="0.20" selected>0.20 мм (Стандарт Ender-3)</option>
+          <option value="0.28">0.28 мм (Быстро / Черновик)</option>
+        </select>
+      </div>
+
+      <div class="control-row">
+        <label>Заполнение:</label>
+        <input type="range" id="sl-infill" min="0" max="100" step="10" value="20" oninput="document.getElementById('sl-inf-val').innerText=this.value+'%'">
+        <b id="sl-inf-val" style="min-width:38px; text-align:right;">20%</b>
+      </div>
+
+      <div class="section-title">2. Поддержки нависаний (Supports >45°)</div>
+      <div class="control-row">
+        <label>Тип опор:</label>
+        <select id="sl-support" onchange="app.previewSupports()">
+          <option value="none" selected>Без поддержек</option>
+          <option value="pillars">🏛 Столбчатые (Колонны — легко ломать)</option>
+          <option value="zigzag">〰️ Линейные (Зигзаг-гармошка)</option>
+        </select>
+        <button onclick="app.previewSupports()" class="btn-warn">🧱 Превью опор</button>
+      </div>
+
+      <div class="section-title">3. Генерация G-Code и отправка на печать</div>
+      <div class="grid-btns">
+        <button onclick="app.sliceToGCode()" class="btn-accent" style="padding:12px;">🔪 Нарезать модель в G-Code (Ender-3)</button>
+      </div>
+
+      <!-- Сводка после нарезки -->
+      <div class="slicer-summary" id="slicer-result-box">
+        ✅ <b>G-Code для Ender-3 готов!</b><br>
+        Слоев: <b id="res-layers">0</b> | Время печати: <b id="res-time">0 мин</b><br>
+        Расход прутка: <b id="res-filament">0 г (0 м)</b>
+        <div class="grid-btns" style="margin-top:8px; margin-bottom:0;">
+          <button onclick="app.exportGCode('save')" class="btn-green">💾 Скачать .GCODE</button>
+          <button onclick="app.exportGCode('share')" class="btn-info">📲 Поделиться .GCODE</button>
+          <button onclick="app.clearGCodePreview()" class="btn-danger">👁 Вернуть 3D-вид</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Вкладка 4: Онлайн поиск 3D моделей -->
     <div class="tab-content">
       <div class="section-title">Поиск готовых STL/3MF моделей в мировых базах</div>
       <div class="control-row">
-        <input type="text" id="online-query" placeholder="Например: корпус arduino, шестерня, кронштейн..." value="enclosure box">
+        <input type="text" id="online-query" placeholder="Например: корпус arduino, шестерня, кронштейн..." value="ender 3 upgrade">
       </div>
       <div class="grid-btns">
         <button onclick="app.searchOnline('printables')" class="btn-accent">🔍 Printables</button>
@@ -330,63 +387,28 @@
         <button onclick="app.searchOnline('grabcad')">🔍 GrabCAD</button>
       </div>
 
-      <div class="section-title">Прямая загрузка тестовых STL-моделей из облака сразу на стол</div>
+      <div class="section-title">Тестовые модели в 1 клик</div>
       <div class="grid-btns">
-        <button onclick="app.loadCloudSample('benchy')" class="btn-warn">⛵ 3DBenchy (Тест)</button>
-        <button onclick="app.loadCloudSample('bolt_nut')" class="btn-warn">🔩 Калибр-куб 20мм</button>
-      </div>
-
-      <div class="section-title">Загрузка собственного STL по прямой веб-ссылке (URL)</div>
-      <div class="control-row">
-        <input type="text" id="direct-stl-url" placeholder="Вставьте прямую https:// ссылку на .stl файл">
-        <button onclick="app.loadFromDirectUrl()" class="btn-accent">⬇️ Загрузить</button>
+        <button onclick="app.loadCloudSample('bolt_nut')" class="btn-warn">🧊 Калибр-куб 20мм</button>
+        <button onclick="app.loadCloudSample('bridge_test')" class="btn-warn">🌉 Тест нависаний (Арка)</button>
       </div>
     </div>
 
-    <!-- Вкладка 4: Калькулятор веса и стоимости -->
-    <div class="tab-content">
-      <div class="section-title">Расчет расхода пластика и цены</div>
-      <div class="control-row">
-        <label>Пластик:</label>
-        <select id="calc-mat" onchange="app.updateCalculator()">
-          <option value="1.27" selected>PETG (1.27 г/см³)</option>
-          <option value="1.24">PLA (1.24 г/см³)</option>
-          <option value="1.04">ABS (1.04 г/см³)</option>
-          <option value="1.21">TPU (1.21 г/см³)</option>
-        </select>
-      </div>
-      <div class="control-row">
-        <label>Заполнение:</label>
-        <input type="range" id="calc-infill" min="10" max="100" step="5" value="25" oninput="app.updateCalculator()">
-        <b id="calc-infill-val" style="min-width:42px; text-align:right;">25%</b>
-      </div>
-      <div class="control-row">
-        <label>Цена 1 кг:</label>
-        <input type="number" id="calc-price" value="7500" step="500" oninput="app.updateCalculator()" style="width:100px;">
-      </div>
-      <div class="calc-card">
-        <div class="calc-item"><span>Литая (100%)</span><b id="res-weight-solid">0 г</b></div>
-        <div class="calc-item"><span>С учетом Infill</span><b id="res-weight-real">0 г</b></div>
-        <div class="calc-item"><span>Пруток 1.75мм</span><b id="res-length">0 м</b></div>
-        <div class="calc-item"><span>Стоимость</span><b id="res-cost">0</b></div>
-      </div>
-    </div>
-
-    <!-- Вкладка 5: Нативное сохранение в память Android и отправка в слайсер -->
+    <!-- Вкладка 5: Нативное сохранение STL / OBJ -->
     <div class="tab-content">
       <div class="section-title">Имя файла для сохранения</div>
       <div class="control-row">
         <label>Имя файла:</label>
-        <input type="text" id="export-filename" value="my_part_3d">
+        <input type="text" id="export-filename" value="ender3_part">
       </div>
 
-      <div class="section-title">Отправка напрямую в слайсер (Cura, Creality Cloud, Bambu, Telegram)</div>
+      <div class="section-title">Отправка 3D-модели во внешний слайсер / Telegram</div>
       <div class="grid-btns">
-        <button onclick="app.exportNative('stl', 'share')" class="btn-accent" style="padding:12px;">📲 Поделиться .STL (Отправить в слайсер)</button>
+        <button onclick="app.exportNative('stl', 'share')" class="btn-accent" style="padding:12px;">📲 Поделиться .STL</button>
         <button onclick="app.exportNative('obj', 'share')" class="btn-info" style="padding:12px;">📲 Поделиться .OBJ</button>
       </div>
 
-      <div class="section-title">Сохранение файла в папку «Документы» (Documents) телефона</div>
+      <div class="section-title">Сохранение файла в папку «Документы» телефона</div>
       <div class="grid-btns">
         <button onclick="app.exportNative('stl', 'save')" class="btn-green" style="padding:12px;">💾 Сохранить .STL в телефон</button>
         <button onclick="app.exportNative('obj', 'save')" style="padding:12px;">💾 Сохранить .OBJ в телефон</button>
@@ -394,7 +416,6 @@
     </div>
   </div>
 
-  <!-- Подключаем глобальный мост Capacitor (доступен внутри APK) -->
   <script src="capacitor.js"></script>
 
   <script type="module">
@@ -411,7 +432,6 @@
 
     THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
-    // Конвертер бинарного буфера в Base64 для нативной записи через Capacitor Filesystem
     function arrayBufferToBase64(buffer) {
       let binary = '';
       const bytes = new Uint8Array(buffer);
@@ -422,12 +442,24 @@
       return window.btoa(binary);
     }
 
+    // Оптимальные профили под Ender-3 (Боуден, сопло 0.4, нить 1.75)
+    const ENDER_PROFILES = {
+      petg: { nozzle: 235, bed: 75,  speed: 45, retract: 5.5, fan: 102, density: 1.27 },
+      pla:  { nozzle: 205, bed: 60,  speed: 55, retract: 5.0, fan: 255, density: 1.24 },
+      abs:  { nozzle: 245, bed: 100, speed: 45, retract: 5.0, fan: 0,   density: 1.04 },
+      tpu:  { nozzle: 220, bed: 50,  speed: 25, retract: 2.0, fan: 128, density: 1.21 }
+    };
+
     class PrintApp {
       constructor() {
         this.objects = [];
         this.selected = null;
         this.renderMode = 'solid';
         this.gcodeObject = null;
+        this.supportPreviewGroup = new THREE.Group();
+        this.currentProfile = 'petg';
+        this.lastGeneratedGCode = '';
+
         this.caliperActive = false;
         this.measurePoints = [];
         this.measureGroup = new THREE.Group();
@@ -443,6 +475,7 @@
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x121518);
         this.scene.add(this.measureGroup);
+        this.scene.add(this.supportPreviewGroup);
 
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
         this.camera.position.set(0, -230, 170);
@@ -521,664 +554,35 @@
         });
       }
 
-      toggleCaliper() {
-        this.caliperActive = !this.caliperActive;
-        document.getElementById('btn-caliper').classList.toggle('btn-active', this.caliperActive);
-        const badge = document.getElementById('caliper-info');
-        badge.style.display = this.caliperActive ? 'block' : 'none';
-        this.clearCaliperPoints();
-        if (this.caliperActive) badge.innerHTML = '📏 <b>Штангенциркуль:</b> ткните точку 1 на детали';
-      }
-
-      clearCaliperPoints() {
-        this.measurePoints = [];
-        while (this.measureGroup.children.length > 0) this.measureGroup.remove(this.measureGroup.children[0]);
-      }
-
-      handleCaliperClick(point) {
-        const badge = document.getElementById('caliper-info');
-        if (this.measurePoints.length >= 2) this.clearCaliperPoints();
-        this.measurePoints.push(point.clone());
-
-        const dot = new THREE.Mesh(
-          new THREE.SphereGeometry(1.2, 16, 16),
-          new THREE.MeshBasicMaterial({ color: 0x00e676, depthTest: false })
-        );
-        dot.position.copy(point);
-        this.measureGroup.add(dot);
-
-        if (this.measurePoints.length === 1) {
-          badge.innerHTML = '📏 Точка 1 задана. <b>Ткните точку 2!</b>';
-        } else {
-          const [p1, p2] = this.measurePoints;
-          const dist = p1.distanceTo(p2).toFixed(2);
-          const dx = Math.abs(p2.x - p1.x).toFixed(2);
-          const dy = Math.abs(p2.y - p1.y).toFixed(2);
-          const dz = Math.abs(p2.z - p1.z).toFixed(2);
-
-          const line = new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints([p1, p2]),
-            new THREE.LineBasicMaterial({ color: 0x00e676, depthTest: false })
-          );
-          this.measureGroup.add(line);
-          badge.innerHTML = `📏 Длина: <b>${dist} мм</b> (ΔX:${dx} | ΔY:${dy} | ΔZ:${dz})`;
-        }
-      }
-
-      showToast(msg, duration = 0) {
-        const t = document.getElementById('toast');
-        t.innerHTML = msg;
-        t.style.display = 'block';
-        if (this.toastTimer) clearTimeout(this.toastTimer);
-        if (duration > 0) this.toastTimer = setTimeout(() => { t.style.display = 'none'; }, duration);
-      }
-      hideToast() { document.getElementById('toast').style.display = 'none'; }
-
-      createMaterial(isHole = false) {
-        if (isHole) {
-          return new THREE.MeshStandardMaterial({
-            color: 0xff5252, transparent: true, opacity: 0.52,
-            roughness: 0.4, wireframe: this.renderMode === 'wire'
-          });
-        }
-        if (this.renderMode === 'overhang') {
-          return new THREE.ShaderMaterial({
-            vertexShader: `varying vec3 vNormal; void main() { vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-            fragmentShader: `varying vec3 vNormal; void main() { vec3 l = normalize(vec3(0.5,-0.5,1.0)); float d = max(dot(vNormal,l), 0.25); gl_FragColor = (vNormal.z < -0.707) ? vec4(1.0,0.2,0.2,1.0) : vec4(vec3(0.2,0.7,0.9)*d, 1.0); }`,
-            side: THREE.DoubleSide
-          });
-        }
-        return new THREE.MeshStandardMaterial({
-          color: 0x4fc3f7, roughness: 0.35, metalness: 0.15,
-          wireframe: this.renderMode === 'wire', side: THREE.DoubleSide
+      // Настройка профиля пластика в 1 клик
+      setFilamentProfile(prof) {
+        this.currentProfile = prof;
+        ['petg', 'pla', 'abs', 'tpu'].forEach(p => {
+          document.getElementById('prof-' + p).classList.toggle('btn-active', p === prof);
         });
+        const cfg = ENDER_PROFILES[prof];
+        document.getElementById('sl-nozzle').value = cfg.nozzle;
+        document.getElementById('sl-bed').value = cfg.bed;
+        document.getElementById('sl-speed').value = cfg.speed;
       }
 
-      addMeshFromGeometry(geometry, name = 'Деталь', isHole = false) {
-        if (this.gcodeObject) { this.scene.remove(this.gcodeObject); this.gcodeObject = null; }
-        geometry.computeVertexNormals();
-        geometry.computeBoundingBox();
-
-        const center = new THREE.Vector3();
-        geometry.boundingBox.getCenter(center);
-        geometry.translate(-center.x, -center.y, -center.z);
-        geometry.computeBoundingBox();
-
-        const size = new THREE.Vector3();
-        geometry.boundingBox.getSize(size);
-
-        const mesh = new THREE.Mesh(geometry, this.createMaterial(isHole));
-        mesh.name = name;
-        mesh.userData.isHole = isHole;
-        mesh.position.set(0, 0, size.z / 2);
-
-        this.scene.add(mesh);
-        this.objects.push(mesh);
-        this.selectObject(mesh);
-        this.updateStats();
-      }
-
-      // Расширенные примитивы + Полый корпус РЭА + Г-образный кронштейн
-      addPrimitive(type) {
-        let geo, name = 'Фигура';
-        const evaluator = new Evaluator();
-        switch (type) {
-          case 'box': geo = new THREE.BoxGeometry(20, 20, 20); name = 'Куб'; break;
-          case 'enclosure': {
-            // Полая коробка для электроники 60x40x25 мм со стенкой 2 мм
-            const outer = new THREE.BoxGeometry(60, 40, 25);
-            const inner = new THREE.BoxGeometry(56, 36, 25);
-            inner.translate(0, 0, 2); // Дно 2 мм
-            geo = evaluator.evaluate(new Brush(outer), new Brush(inner), SUBTRACTION).geometry;
-            name = 'Корпус_РЭА'; break;
-          }
-          case 'bracket': {
-            // Крепежный Г-образный уголок 30x30x20 мм толщиной 4 мм
-            const full = new THREE.BoxGeometry(20, 30, 30);
-            const cut = new THREE.BoxGeometry(22, 26, 26);
-            cut.translate(0, 4, 4);
-            geo = evaluator.evaluate(new Brush(full), new Brush(cut), SUBTRACTION).geometry;
-            name = 'Уголок_L'; break;
-          }
-          case 'cylinder':
-            geo = new THREE.CylinderGeometry(10, 10, 20, 48);
-            geo.rotateX(Math.PI / 2); name = 'Цилиндр'; break;
-          case 'tube': {
-            const outer = new THREE.CylinderGeometry(10, 10, 20, 48);
-            const inner = new THREE.CylinderGeometry(5, 5, 22, 48);
-            outer.rotateX(Math.PI / 2); inner.rotateX(Math.PI / 2);
-            geo = evaluator.evaluate(new Brush(outer), new Brush(inner), SUBTRACTION).geometry;
-            name = 'Втулка'; break;
-          }
-          case 'sphere': geo = new THREE.SphereGeometry(12, 36, 36); name = 'Сфера'; break;
-          case 'cone':
-            geo = new THREE.ConeGeometry(12, 24, 48);
-            geo.rotateX(Math.PI / 2); name = 'Конус'; break;
-          case 'torus': geo = new THREE.TorusGeometry(12, 3.5, 24, 64); name = 'Кольцо'; break;
-        }
-        this.addMeshFromGeometry(geo, name, false);
-      }
-
-      // Готовые вырезы (Фрезы) под радиодетали и разъемы (USB-C, USB-A, DC Jack, KCD1, OLED, Вентиляция)
-      addElectronicsCutout(type) {
-        let geo, name = 'Вырез';
-        const evaluator = new Evaluator();
-        switch (type) {
-          case 'usb_c': {
-            // Стандарт USB Type-C: скругленный паз 9.2 x 3.4 мм, глубина фрезы 16 мм
-            const w = 9.2, h = 3.4, r = h / 2, len = 16;
-            const centerBox = new THREE.BoxGeometry(w - h, len, h);
-            const cylL = new THREE.CylinderGeometry(r, r, len, 24);
-            cylL.translate(-(w - h)/2, 0, 0);
-            const cylR = new THREE.CylinderGeometry(r, r, len, 24);
-            cylR.translate((w - h)/2, 0, 0);
-            let res = evaluator.evaluate(new Brush(centerBox), new Brush(cylL), ADDITION);
-            res = evaluator.evaluate(res, new Brush(cylR), ADDITION);
-            geo = res.geometry; name = 'Фреза_USB_C'; break;
-          }
-          case 'usb_a':
-            geo = new THREE.BoxGeometry(14.5, 18, 7.0); name = 'Фреза_USB_A'; break;
-          case 'dc_jack':
-            // Вырез под панельное гнездо питания 5.5x2.1 (диаметр резьбы 8.2 мм или 11.2 мм)
-            geo = new THREE.CylinderGeometry(4.1, 4.1, 18, 36);
-            name = 'Фреза_DC_Jack'; break;
-          case 'kcd1':
-            // Классический клавишный сетевой выключатель KCD1 (посадочное 19.2 x 13.0 мм)
-            geo = new THREE.BoxGeometry(13.0, 18, 19.2); name = 'Фреза_KCD1'; break;
-          case 'oled':
-            // Окно под экран OLED 0.96" (25 x 14 мм)
-            geo = new THREE.BoxGeometry(25.0, 15, 14.0); name = 'Окно_OLED_096'; break;
-          case 'vents': {
-            // Решетка вентиляции из 4 прорезей (жабры)
-            const slots = [];
-            for (let i = 0; i < 4; i++) {
-              const s = new THREE.BoxGeometry(25, 16, 2.5);
-              s.translate(0, 0, i * 5);
-              slots.push(s);
-            }
-            geo = BufferGeometryUtils.mergeGeometries(slots);
-            name = 'Фреза_Вентиляция'; break;
-          }
-        }
-        this.addMeshFromGeometry(geo, name, true);
-        this.showToast(`Фреза «${name}» добавлена!<br>Совместите со стенкой корпуса и нажмите «Вырезать»`, 2600);
-      }
-
-      addFastener(type) {
-        const specs = {
-          m3_bolt: { d: 3.2, hd: 6.0, hh: 3.2, len: 20, name: 'Болт_М3' },
-          m4_bolt: { d: 4.2, hd: 7.5, hh: 4.2, len: 25, name: 'Болт_М4' },
-          m5_bolt: { d: 5.2, hd: 9.0, hh: 5.2, len: 30, name: 'Болт_М5' },
-          m3_nut:  { w: 5.7, h: 2.6, name: 'Гайка_М3' },
-          m4_nut:  { w: 7.2, h: 3.4, name: 'Гайка_М4' },
-          m5_nut:  { w: 8.2, h: 4.2, name: 'Гайка_М5' }
-        };
-        const s = specs[type];
-        if (type.includes('bolt')) {
-          const shaft = new THREE.CylinderGeometry(s.d/2, s.d/2, s.len, 36);
-          shaft.rotateX(Math.PI / 2);
-          const head = new THREE.CylinderGeometry(s.hd/2, s.hd/2, s.hh, 36);
-          head.rotateX(Math.PI / 2);
-          head.translate(0, 0, s.len/2 + s.hh/2 - 0.1);
-          const res = new Evaluator().evaluate(new Brush(shaft), new Brush(head), ADDITION);
-          this.addMeshFromGeometry(res.geometry, s.name, true);
-        } else {
-          const radius = s.w / Math.sqrt(3);
-          const nutGeo = new THREE.CylinderGeometry(radius, radius, s.h, 6);
-          nutGeo.rotateX(Math.PI / 2);
-          this.addMeshFromGeometry(nutGeo, s.name, true);
+      // Анализ нависаний и построение 3D-превью поддержек (Столбчатые или Зигзаг)
+      clearSupportsPreview() {
+        while (this.supportPreviewGroup.children.length > 0) {
+          this.supportPreviewGroup.remove(this.supportPreviewGroup.children[0]);
         }
       }
 
-      // ВЫХОД В ИНТЕРНЕТ: Поиск по крупнейшим 3D-базам и прямая загрузка моделей из облака
-      searchOnline(platform) {
-        const q = encodeURIComponent(document.getElementById('online-query').value.trim() || '3d print');
-        const urls = {
-          printables: `https://www.printables.com/search/models?q=${q}`,
-          thingiverse: `https://www.thingiverse.com/search?q=${q}&type=things`,
-          makerworld: `https://makerworld.com/en/search/models?keyword=${q}`,
-          thangs: `https://thangs.com/search/${q}`,
-          grabcad: `https://grabcad.com/library?query=${q}`
-        };
-        window.open(urls[platform], '_system');
-      }
+      findOverhangColumns(solids, step = 6) {
+        const columns = [];
+        const raycaster = new THREE.Raycaster();
+        const down = new THREE.Vector3(0, 0, -1);
 
-      async loadCloudSample(sample) {
-        if (sample === 'bolt_nut') {
-          // Генерируем калибровочный кубик XYZ 20x20x20 мм с вырезами
-          const cube = new THREE.BoxGeometry(20, 20, 20);
-          const hole = new THREE.CylinderGeometry(5, 5, 22, 32);
-          const res = new Evaluator().evaluate(new Brush(cube), new Brush(hole), SUBTRACTION);
-          this.addMeshFromGeometry(res.geometry, 'Калибр_Куб_20мм', false);
-          this.showToast('Калибровочный куб 20×20×20 мм создан!', 2000);
-          return;
-        }
-        // Прямая загрузка тестовой 3D-модели из официального репозитория Three.js через интернет
-        const url = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/models/stl/binary/pr2_head_pan.stl';
-        await this.fetchAndLoadSTL(url, 'Cloud_Part.stl');
-      }
+        // Объединяем бокс всех твердых объектов
+        const totalBox = new THREE.Box3();
+        solids.forEach(s => totalBox.expandByObject(s));
 
-      async loadFromDirectUrl() {
-        const url = document.getElementById('direct-stl-url').value.trim();
-        if (!url.startsWith('http')) {
-          alert('Введите корректную ссылку, начинающуюся с https://');
-          return;
-        }
-        await this.fetchAndLoadSTL(url, 'Online_Model.stl');
-      }
-
-      async fetchAndLoadSTL(url, name) {
-        try {
-          this.showToast('🌐 Скачивание 3D-модели из интернета...');
-          const res = await fetch(url);
-          if (!res.ok) throw new Error('Сервер вернул код ' + res.status);
-          const buffer = await res.arrayBuffer();
-          const geo = new STLLoader().parse(buffer);
-          this.addMeshFromGeometry(geo, name, false);
-          this.layFlat();
-          this.showToast('✅ Модель успешно загружена из интернета!', 2200);
-        } catch (e) {
-          this.hideToast();
-          alert('Не удалось загрузить файл напрямую (проверьте интернет или ссылку): ' + e.message);
-        }
-      }
-
-      loadFile(file) {
-        const ext = file.name.split('.').pop().toLowerCase();
-        this.showToast(`Чтение ${file.name}...`);
-        const reader = new FileReader();
-
-        reader.onload = (ev) => {
-          try {
-            const contents = ev.target.result;
-            if (ext === 'stl') {
-              this.addMeshFromGeometry(new STLLoader().parse(contents), file.name);
-            } else if (ext === 'obj') {
-              const obj = new OBJLoader().parse(new TextDecoder().decode(contents));
-              const geos = [];
-              obj.traverse(c => { if (c.isMesh) geos.push(c.geometry.clone()); });
-              if (geos.length > 0) this.addMeshFromGeometry(BufferGeometryUtils.mergeGeometries(geos), file.name);
-            } else if (ext === '3mf') {
-              const group = new ThreeMFLoader().parse(contents);
-              const geos = [];
-              group.traverse(c => { if (c.isMesh) geos.push(c.geometry.clone()); });
-              if (geos.length > 0) this.addMeshFromGeometry(BufferGeometryUtils.mergeGeometries(geos), file.name);
-            } else if (ext === 'gcode' || ext === 'gco') {
-              if (this.gcodeObject) this.scene.remove(this.gcodeObject);
-              const gcode = new GCodeLoader().parse(new TextDecoder().decode(contents));
-              gcode.rotation.x = Math.PI / 2;
-              gcode.position.set(-110, -110, 0);
-              this.gcodeObject = gcode;
-              this.scene.add(gcode);
-              this.showToast('G-Code загружен!', 2000);
-              return;
-            }
-            this.hideToast();
-          } catch (err) {
-            alert('Ошибка чтения файла: ' + err.message);
-            this.hideToast();
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      }
-
-      selectObject(mesh) {
-        this.selected = mesh;
-        if (mesh) {
-          this.boxHelper.setFromObject(mesh);
-          this.boxHelper.visible = true;
-          const btnHole = document.getElementById('btn-hole');
-          btnHole.classList.toggle('btn-active', mesh.userData.isHole);
-          btnHole.innerText = mesh.userData.isHole ? '🕳 Режим: Фреза (Отверстие)' : '🕳 Сделать «Фрезой» (Отверстием)';
-        } else {
-          this.boxHelper.visible = false;
-        }
-        this.syncUIWithSelected();
-        this.updateStats();
-      }
-
-      getMeshDimensions(mesh) {
-        const box = new THREE.Box3().setFromObject(mesh);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        return { box, size };
-      }
-
-      syncUIWithSelected() {
-        if (!this.selected) return;
-        const { size } = this.getMeshDimensions(this.selected);
-        const pos = this.selected.position;
-        const setVal = (id, val) => { document.getElementById(id).value = Number(val).toFixed(1); };
-        setVal('slide-sx', size.x); setVal('num-sx', size.x);
-        setVal('slide-sy', size.y); setVal('num-sy', size.y);
-        setVal('slide-sz', size.z); setVal('num-sz', size.z);
-        setVal('slide-px', pos.x); setVal('num-px', pos.x);
-        setVal('slide-py', pos.y); setVal('num-py', pos.y);
-        setVal('slide-pz', pos.z); setVal('num-pz', pos.z);
-      }
-
-      TransformFromUI(mode, axis, val) {
-        if (!this.selected) return;
-        const num = parseFloat(val);
-        if (isNaN(num)) return;
-        if (mode === 'pos') {
-          this.selected.position[axis] = num;
-        } else if (mode === 'size' && num > 0.1) {
-          const { size } = this.getMeshDimensions(this.selected);
-          if (size[axis] > 0) this.selected.scale[axis] *= (num / size[axis]);
-        }
-        this.boxHelper.update();
-        this.syncUIWithSelected();
-        this.updateStats();
-      }
-
-      rotateSelected(axis, deg) {
-        if (!this.selected) return;
-        this.selected.rotation[axis] += THREE.MathUtils.degToRad(deg);
-        this.layFlat();
-      }
-
-      layFlat() {
-        if (!this.selected) return;
-        const { box } = this.getMeshDimensions(this.selected);
-        this.selected.position.z -= box.min.z;
-        this.boxHelper.update();
-        this.syncUIWithSelected();
-        this.updateStats();
-      }
-
-      centerSelected() {
-        if (!this.selected) return;
-        this.selected.position.x = 0;
-        this.selected.position.y = 0;
-        this.layFlat();
-      }
-
-      toggleHoleMode() {
-        if (!this.selected) return;
-        this.selected.userData.isHole = !this.selected.userData.isHole;
-        this.selected.material = this.createMaterial(this.selected.userData.isHole);
-        this.selectObject(this.selected);
-      }
-
-      applyBooleanAndMerge() {
-        if (this.objects.length < 2) {
-          this.showToast('Нужно минимум 2 объекта на столе!', 2000);
-          return;
-        }
-        const solids = this.objects.filter(o => !o.userData.isHole);
-        const holes = this.objects.filter(o => o.userData.isHole);
-        if (solids.length === 0) {
-          this.showToast('Нет основной детали!', 2000);
-          return;
-        }
-
-        this.showToast('⚡ Вычисление 3D-геометрии...');
-        setTimeout(() => {
-          try {
-            const evaluator = new Evaluator();
-            const prepBrush = (mesh) => {
-              mesh.updateMatrixWorld();
-              const g = mesh.geometry.clone();
-              g.applyMatrix4(mesh.matrixWorld);
-              const b = new Brush(g);
-              b.updateMatrixWorld();
-              return b;
-            };
-
-            let resultBrush = prepBrush(solids[0]);
-            for (let i = 1; i < solids.length; i++) resultBrush = evaluator.evaluate(resultBrush, prepBrush(solids[i]), ADDITION);
-            for (let i = 0; i < holes.length; i++) resultBrush = evaluator.evaluate(resultBrush, prepBrush(holes[i]), SUBTRACTION);
-
-            const finalGeo = resultBrush.geometry.clone();
-            this.clearAll(false);
-            this.addMeshFromGeometry(finalGeo, 'Готовая_деталь', false);
-            this.layFlat();
-            this.showToast('✅ Вырезы применены, деталь объединена!', 1800);
-          } catch (e) {
-            alert('Ошибка булевой операции: ' + e.message);
-            this.hideToast();
-          }
-        }, 50);
-      }
-
-      duplicateSelected() {
-        if (!this.selected) return;
-        const clone = this.selected.clone();
-        clone.geometry = this.selected.geometry.clone();
-        clone.material = this.createMaterial(this.selected.userData.isHole);
-        clone.position.x += 15;
-        clone.position.y += 15;
-        this.scene.add(clone);
-        this.objects.push(clone);
-        this.selectObject(clone);
-      }
-
-      deleteSelected() {
-        if (!this.selected) return;
-        this.scene.remove(this.selected);
-        this.objects = this.objects.filter(o => o !== this.selected);
-        this.selectObject(this.objects[this.objects.length - 1] || null);
-      }
-
-      clearAll(confirmAsk = true) {
-        if (confirmAsk && this.objects.length > 0 && !confirm('Очистить весь стол?')) return;
-        this.objects.forEach(o => this.scene.remove(o));
-        this.objects = [];
-        this.clearCaliperPoints();
-        if (this.gcodeObject) { this.scene.remove(this.gcodeObject); this.gcodeObject = null; }
-        this.selectObject(null);
-      }
-
-      setRenderMode(mode) {
-        this.renderMode = mode;
-        ['solid', 'wire', 'overhang'].forEach(m => {
-          document.getElementById('btn-' + m).classList.toggle('btn-active', m === mode);
-        });
-        this.objects.forEach(o => { o.material = this.createMaterial(o.userData.isHole); });
-      }
-
-      calculateVolumeCm3(mesh) {
-        const geo = mesh.geometry;
-        const pos = geo.attributes.position;
-        if (!pos) return 0;
-        let vol = 0;
-        const p1 = new THREE.Vector3(), p2 = new THREE.Vector3(), p3 = new THREE.Vector3();
-        const index = geo.index;
-        const count = index ? index.count : pos.count;
-
-        for (let i = 0; i < count; i += 3) {
-          const a = index ? index.getX(i) : i;
-          const b = index ? index.getX(i+1) : i+1;
-          const c = index ? index.getX(i+2) : i+2;
-          p1.fromBufferAttribute(pos, a).multiply(mesh.scale);
-          p2.fromBufferAttribute(pos, b).multiply(mesh.scale);
-          p3.fromBufferAttribute(pos, c).multiply(mesh.scale);
-          vol += p1.dot(p2.cross(p3)) / 6.0;
-        }
-        return Math.abs(vol) / 1000;
-      }
-
-      updateStats() {
-        document.getElementById('stat-count').innerText = this.objects.length;
-        if (!this.selected) {
-          document.getElementById('stat-name').innerText = 'Нет';
-          document.getElementById('stat-size').innerText = '0×0×0';
-          document.getElementById('stat-vol').innerText = '0';
-          document.getElementById('stat-poly').innerText = '0';
-          this.updateCalculator(0);
-          return;
-        }
-        const { size } = this.getMeshDimensions(this.selected);
-        const geo = this.selected.geometry;
-        const polys = geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3;
-        const vol = this.calculateVolumeCm3(this.selected);
-
-        document.getElementById('stat-name').innerText = this.selected.name;
-        document.getElementById('stat-size').innerText = `${size.x.toFixed(1)}×${size.y.toFixed(1)}×${size.z.toFixed(1)}`;
-        document.getElementById('stat-vol').innerText = vol.toFixed(2);
-        document.getElementById('stat-poly').innerText = Math.round(polys);
-        this.updateCalculator(vol);
-      }
-
-      updateCalculator(volOverride) {
-        const vol = (volOverride !== undefined) ? volOverride : (this.selected ? this.calculateVolumeCm3(this.selected) : 0);
-        const density = parseFloat(document.getElementById('calc-mat').value) || 1.27;
-        const infill = parseFloat(document.getElementById('calc-infill').value) || 25;
-        const spoolPrice = parseFloat(document.getElementById('calc-price').value) || 0;
-
-        document.getElementById('calc-infill-val').innerText = infill + '%';
-        const effectiveFactor = 0.30 + 0.70 * (infill / 100);
-        const weightSolid = vol * density;
-        const weightReal = weightSolid * effectiveFactor;
-        const lengthMeters = (vol * effectiveFactor) / 2.405;
-        const cost = (weightReal / 1000) * spoolPrice;
-
-        document.getElementById('res-weight-solid').innerText = weightSolid.toFixed(1) + ' г';
-        document.getElementById('res-weight-real').innerText = weightReal.toFixed(1) + ' г';
-        document.getElementById('res-length').innerText = lengthMeters.toFixed(2) + ' м';
-        document.getElementById('res-cost').innerText = Math.round(cost).toLocaleString();
-      }
-
-      // НАСТОЯЩЕЕ СОХРАНЕНИЕ В ПАМЯТЬ ТЕЛЕФОНА И ОТПРАВКА В СЛАЙСЕР ЧЕРЕЗ НАТИВНЫЕ ПЛАГИНЫ CAPACITOR
-      async exportNative(format, actionType) {
-        const solids = this.objects.filter(o => !o.userData.isHole);
-        if (solids.length === 0) {
-          alert('На столе нет деталей для сохранения! Добавьте хотя бы одну фигуру.');
-          return;
-        }
-
-        // Если на столе есть невырезанные красные «фрезы», предупредим и предложим автоматически применить их
-        const holes = this.objects.filter(o => o.userData.isHole);
-        if (holes.length > 0 && confirm('На столе есть красные вырезы-фрезы. Вырезать ими отверстия перед сохранением?')) {
-          this.applyBooleanAndMerge();
-          await new Promise(r => setTimeout(r, 250));
-        }
-
-        const exportGroup = new THREE.Group();
-        this.objects.filter(o => !o.userData.isHole).forEach(m => {
-          m.updateMatrixWorld();
-          const clone = m.clone();
-          clone.geometry = m.geometry.clone().applyMatrix4(m.matrixWorld);
-          clone.position.set(0,0,0); clone.rotation.set(0,0,0); clone.scale.set(1,1,1);
-          exportGroup.add(clone);
-        });
-
-        let rawName = document.getElementById('export-filename').value.trim() || 'model_3d';
-        rawName = rawName.replace(/[^a-zA-Z0-9а-яА-Я_-]/g, '_');
-        const filename = `${rawName}.${format}`;
-
-        let base64Data = '';
-        let blob = null;
-
-        if (format === 'stl') {
-          const result = new STLExporter().parse(exportGroup, { binary: true });
-          const buffer = result.buffer ? result.buffer : result;
-          base64Data = arrayBufferToBase64(buffer);
-          blob = new Blob([buffer], { type: 'application/sla' });
-        } else {
-          const text = new OBJExporter().parse(exportGroup);
-          const encoded = new TextEncoder().encode(text);
-          base64Data = arrayBufferToBase64(encoded.buffer);
-          blob = new Blob([text], { type: 'text/plain' });
-        }
-
-        // Проверяем, запущены ли мы внутри Android APK с нативными плагинами Capacitor
-        const cap = window.Capacitor;
-        if (cap && cap.Plugins && cap.Plugins.Filesystem) {
-          try {
-            const { Filesystem, Share } = cap.Plugins;
-
-            if (actionType === 'share' && Share) {
-              this.showToast('Подготовка файла для слайсера...');
-              // Записываем файл в системный кэш Android и передаем его URI в системное меню Поделиться
-              const written = await Filesystem.writeFile({
-                path: filename,
-                data: base64Data,
-                directory: 'CACHE'
-              });
-              this.hideToast();
-              await Share.share({
-                title: `3D Модель: ${filename}`,
-                text: 'Отправка 3D-модели в слайсер',
-                url: written.uri,
-                dialogTitle: 'Выберите слайсер или приложение'
-              });
-              return;
-            } else {
-              // Нативное сохранение в системную папку «Документы» (Documents) телефона
-              this.showToast('Запись файла в память телефона...');
-              const saved = await Filesystem.writeFile({
-                path: filename,
-                data: base64Data,
-                directory: 'DOCUMENTS',
-                recursive: true
-              });
-              this.showToast(`✅ <b>Файл успешно сохранен в телефон!</b><br><br>Папка: <b>Документы (Documents)</b><br>Имя: <b>${filename}</b>`, 4500);
-
-              // Дополнительно предлагаем сразу открыть меню «Поделиться», если нужно перекинуть в Загрузки/Telegram
-              return;
-            }
-          } catch (nativeErr) {
-            // Если вдруг папка Documents заблокирована прошивкой телефона (бывает на некоторых MIUI/HyperOS),
-            // автоматически открываем системное окно Android «Поделиться / Сохранить в...», которое работает на 100% прошивок!
-            try {
-              const { Filesystem, Share } = cap.Plugins;
-              const fallbackFile = await Filesystem.writeFile({
-                path: filename,
-                data: base64Data,
-                directory: 'CACHE'
-              });
-              this.hideToast();
-              await Share.share({
-                title: `Сохранить ${filename}`,
-                url: fallbackFile.uri,
-                dialogTitle: 'Сохранить файл на устройство или отправить в слайсер'
-              });
-              return;
-            } catch (err2) {
-              alert('Ошибка записи файла: ' + err2.message);
-              this.hideToast();
-              return;
-            }
-          }
-        }
-
-        // Резервный способ, если открыто просто в браузере на ПК
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-        this.showToast(`Файл ${filename} скачан!`, 2500);
-      }
-
-      resetCamera() {
-        this.camera.position.set(0, -230, 170);
-        this.controls.target.set(0, 0, 15);
-        this.controls.update();
-      }
-
-      switchTab(idx) {
-        document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
-        document.querySelectorAll('.tab-content').forEach((c, i) => c.classList.toggle('active', i === idx));
-        document.getElementById('bottom-dock').classList.remove('dock-Minimized');
-        document.getElementById('dock-btn').innerText = '▼';
-      }
-
-      toggleDock() {
-        const dock = document.getElementById('bottom-dock');
-        const isMin = dock.classList.toggle('dock-Minimized');
-        document.getElementById('dock-btn').innerText = isMin ? '▲' : '▼';
-      }
-
-      animate() {
-        requestAnimationFrame(() => this.animate());
-        this.controls.update();
-        this.renderer.render(this.scene, this.camera);
-      }
-    }
-
-    window.app = new PrintApp();
-  </script>
-</body>
-</html>
+        for (let x = totalBox.min.x + 2; x <= totalBox.max.x - 2; x += step) {
+          for (let y = totalBox.min.y + 2; y <= totalBox.max.y - 2; y += step) {
+            // Пускаем луч сверху вниз
+            raycaster.set(new THREE
